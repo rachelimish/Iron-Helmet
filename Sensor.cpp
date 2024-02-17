@@ -42,27 +42,27 @@ using namespace std;
 //	//std::cout << "foo and bar completed.\n";
 Sensor::Sensor(double* locationSensorOfSoldier)
 {
-	this->locationSensorOfSoldier[0] =new float( locationSensorOfSoldier[0]);
-	this->locationSensorOfSoldier[1] = new float(locationSensorOfSoldier[1]);
-	this->locationSensorOfSoldier[2] = new float(locationSensorOfSoldier[2]);
+	this->locationSensorOfSoldier[0] =locationSensorOfSoldier[0];
+	this->locationSensorOfSoldier[1] =locationSensorOfSoldier[1];
+	this->locationSensorOfSoldier[2] = locationSensorOfSoldier[2];
 }
 
 void Sensor::LocationUpdate(double* locationSensorOfSoldier)
 {
-	*this->locationSensorOfSoldier[0] = locationSensorOfSoldier[0];
-	*this->locationSensorOfSoldier[1] = locationSensorOfSoldier[1];
-	*this->locationSensorOfSoldier[2] = locationSensorOfSoldier[2];
+	this->locationSensorOfSoldier[0] = locationSensorOfSoldier[0];
+	this->locationSensorOfSoldier[1] = locationSensorOfSoldier[1];
+	this->locationSensorOfSoldier[2] = locationSensorOfSoldier[2];
 }
 
 void Sensor::ShotDetectionAndAlert()
 {
 	random_device rd;
 	mt19937 gen(rd());
-	uniform_real_distribution<double> dis(*this->locationSensorOfSoldier[0]-3, *this->locationSensorOfSoldier[0]+3);
+	uniform_real_distribution<double> dis(this->locationSensorOfSoldier[0]-3, this->locationSensorOfSoldier[0]+3);
 	double LocationX = dis(gen);
-	uniform_real_distribution<double> dis1(*this->locationSensorOfSoldier[1]-3, *this->locationSensorOfSoldier[1] + 3);
+	uniform_real_distribution<double> dis1(this->locationSensorOfSoldier[1]-3, this->locationSensorOfSoldier[1] + 3);
 	double LocationY = dis1(gen);
-	uniform_real_distribution<double> dis2(*this->locationSensorOfSoldier[2]-3, *this->locationSensorOfSoldier[2] + 3);
+	uniform_real_distribution<double> dis2(this->locationSensorOfSoldier[2]-3, this->locationSensorOfSoldier[2] + 3);
 	double LocationZ = dis2(gen);
 	uniform_int_distribution<int> dis3(-180, 180);
 	int DirectionOfTheShotFromTheToldier= dis3(gen);
@@ -83,4 +83,9 @@ void Sensor::ShotDetectionAndAlert()
 	}
 	mtx.unlock();
 
+}
+
+double* Sensor::GettingTheLocation()
+{
+	return this->locationSensorOfSoldier;
 }
