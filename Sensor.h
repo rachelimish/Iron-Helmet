@@ -9,6 +9,8 @@ public:
     Sensor();
     Sensor(double* locationSensorOfSoldier);
     void LocationUpdate(double* locationSensorOfSoldier);
-    void ShotDetectionAndAlert();//Lottery of location within the range of the soldier (up to 3 meters) and writing to the file of the identification of the shot.
-    double* GettingTheLocation();
+    void ShotDetectionAndAlert();//A function that generates every time we will generate data for the sensor and write to a file (the function generates a location within 3 meters of the soldier, direction and distance).
+    double* GettingTheLocation();//A function returned the position of the soldier
+    string ReceivingAnAlertFromTheSensor();//A function that reads a line from the file and deletes and returns the read line.
+    
 };

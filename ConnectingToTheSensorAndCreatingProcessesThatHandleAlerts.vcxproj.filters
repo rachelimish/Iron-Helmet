@@ -21,9 +21,21 @@
     <ClCompile Include="Sensor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Warning.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="WarningQueue.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Sensor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Warning.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WarningQueue.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
