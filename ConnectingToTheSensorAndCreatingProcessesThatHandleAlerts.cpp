@@ -22,7 +22,6 @@ int main()
         thread WarningName(WhichWillEditALocation, line);
         mone++;
     }
-    return 0;
 }
 void WhichWillEditALocation(string Warning) 
 {

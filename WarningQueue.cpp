@@ -1,6 +1,5 @@
 #include "WarningQueue.h"
 #include <iostream>
-
 WarningQueue::WarningQueue()
 {
 	this->front = nullptr;
