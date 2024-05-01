@@ -1,5 +1,6 @@
 #include "WarningQueue.h"
 #include <iostream>
+
 WarningQueue::WarningQueue()
 {
 	this->front = nullptr;
@@ -11,11 +12,11 @@ bool WarningQueue::isEmpty()
 	return (front == nullptr);
 }
 
-void WarningQueue::enqueue(Warning data)
+void WarningQueue::enqueue(string name)
 {
-    {
+        Warning w(name);
         Node* newNode = new Node;
-        newNode->data = data;
+        newNode->data = w;
         newNode->next = nullptr;
 
         if (isEmpty()) {
@@ -25,7 +26,7 @@ void WarningQueue::enqueue(Warning data)
             newNode->next = front;
             front = newNode;
         }
-    }
+ 
 }
 
 void WarningQueue::dequeue()
@@ -86,4 +87,8 @@ void WarningQueue::KillingIrrelevantProcesses()
         }
     }
 
+}
+
+Node::Node()
+{
 }

@@ -1,6 +1,7 @@
 #include "Warning.h"
 #pragma once
 struct Node {
+    Node();
     Warning data;
     Node* next;
 };
@@ -14,7 +15,7 @@ public:
     // Function to check if the queue is empty
     bool isEmpty();
     // Function to enqueue (add Warning to the beginning of the queue)
-    void enqueue(Warning data);
+    void enqueue(string  name);
     // Function to dequeue (remove element from the end of the queue)
     void dequeue();
     // Function to display the elements in the queue

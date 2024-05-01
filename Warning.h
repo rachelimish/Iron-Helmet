@@ -10,6 +10,7 @@ class Warning
 	string Name;
 	std::chrono::steady_clock::time_point TimeStart;
 public:
+	Warning();
 	Warning(string NameAlert);
 	std::chrono::steady_clock::time_point GetTimeStart();
 	string GetName();

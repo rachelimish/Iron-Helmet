@@ -1,5 +1,9 @@
 #include "Warning.h"
 
+Warning::Warning()
+{
+}
+
 Warning::Warning(string NameAlert)
 {
 	this->Name = NameAlert;
