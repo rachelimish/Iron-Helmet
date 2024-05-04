@@ -3,7 +3,11 @@
 #include <iostream>
 #include <fstream>
 #include <random>
+#include <cmath>
 using namespace std;
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 std::mutex mtx;
 Sensor::Sensor()
 {
@@ -27,7 +31,7 @@ void Sensor::LocationUpdate(double* locationSensorOfSoldier)
 	{
 		random_device rd;
 		mt19937 gen(rd());
-		uniform_int_distribution<int> dis3(1, 70);
+		uniform_int_distribution<int> dis3(1, 60);
 		int When = dis3(gen);
 		cout << When << endl;
 		std::this_thread::sleep_for(std::chrono::seconds(When));
@@ -41,28 +45,29 @@ void Sensor::LocationUpdate(double* locationSensorOfSoldier)
 			std::chrono::steady_clock::time_point current_time = std::chrono::steady_clock::now();
 			elapsed_time = std::chrono::duration_cast<std::chrono::seconds>(newTime - current_time).count();
 		}*/
-		double newx1 = this->locationSensorOfSoldier[0] - 5;
-		double newx2 = this->locationSensorOfSoldier[0] + 5;
-		double newy1 = this->locationSensorOfSoldier[0] - 5;
-		double newy2 = this->locationSensorOfSoldier[0] + 5;
-		double newz1 = this->locationSensorOfSoldier[0] - 5;
-		double newz2 = this->locationSensorOfSoldier[0] + 5;
+		double max_range_detectionX = this->locationSensorOfSoldier[0] +(100/111000);
+		double min_range_detectionX = this->locationSensorOfSoldier[0] -(100 / 111000);
+		double max_range_detectionY = this->locationSensorOfSoldier[1] + (100 / 111000);
+		double min_range_detectionY = this->locationSensorOfSoldier[1] - (100 / 111000);
+		double max_range_detectionZ = this->locationSensorOfSoldier[2] + 100;
+		double min_range_detectionZ = this->locationSensorOfSoldier[2] - 100;
 
-		uniform_real_distribution<double> dis(newx1, newx2);
+		uniform_real_distribution<double> dis(min_range_detectionX, max_range_detectionX);
 		double LocationX = dis(gen);
-		uniform_real_distribution<double> dis1(newy1, newy2);
+		uniform_real_distribution<double> dis1(min_range_detectionY, max_range_detectionY);
 		double LocationY = dis1(gen);
-		uniform_real_distribution<double> dis2(newz1, newz2);
+		uniform_real_distribution<double> dis2(min_range_detectionZ, max_range_detectionZ);
 		double LocationZ = dis2(gen);
-		uniform_real_distribution<double> dis7(0, 360);
-		double DirectionOfTheShotFromTheToldier = dis7(gen);
-		uniform_real_distribution<double> dis4(0,5);
-		double distance = dis4(gen);
-		ofstream outputFile("../Src/parameterim.txt", ios::app);
+
+		double DirectionOfTheShotFromTheSoldier = bearing_with_altitude(locationSensorOfSoldier[0], locationSensorOfSoldier[1], locationSensorOfSoldier[2], LocationX, LocationY, LocationZ);
+
+		double distance = haversine_distance(locationSensorOfSoldier[0], locationSensorOfSoldier[1], locationSensorOfSoldier[2],LocationX,LocationY,LocationZ);
+		
+		ofstream outputFile("../Src/data.txt", ios::app);
 		mtx.lock();
 		if (outputFile.is_open())
 		{
-			outputFile << LocationX << "," << LocationY << "," << LocationZ << "," << DirectionOfTheShotFromTheToldier << "," << distance << "," << endl;
+			outputFile << LocationX << "," << LocationY << "," << LocationZ << "," << DirectionOfTheShotFromTheSoldier << "," << distance << "," << endl;
 
 			outputFile.close();
 			cout << "Data written to file successfully." << endl;
@@ -76,6 +81,7 @@ void Sensor::LocationUpdate(double* locationSensorOfSoldier)
 	}
 }
 
+
 double* Sensor::GettingTheLocation()
 {
 	return this->locationSensorOfSoldier;
@@ -84,7 +90,7 @@ double* Sensor::GettingTheLocation()
 string Sensor::ReceivingAnAlertFromTheSensor()
 {
 	string alert = "";
-	ifstream file("../Src/parameterim.txt");
+	ifstream file("../Src/data.txt");
 	mtx.lock();
 	file.is_open();
 	if (file.peek() == EOF) {
@@ -117,7 +123,7 @@ string Sensor::ReceivingAnAlertFromTheSensor()
 	lines.erase(lines.begin());
 
 	// Write the updated content back to the file
-	std::ofstream outputFile("../Src/parameterim.txt");
+	std::ofstream outputFile("../Src/data.txt");
 	for (const string& updatedLine : lines) {
 		outputFile << updatedLine << std::endl;
 	}
@@ -126,4 +132,48 @@ string Sensor::ReceivingAnAlertFromTheSensor()
 	std::cout << "Line " << 1 << " deleted successfully from file." << std::endl;
 	mtx.unlock();
 	return alert;
+}
+
+// Function to calculate the distance using Haversine formula in meters
+double Sensor::haversine_distance(double lat1, double lon1, double elev1, double lat2, double lon2, double elev2)
+{
+	
+	const double R = 6371000.0; // Earth radius in meters
+
+	lat1 = M_PI * lat1 / 180.0;
+	lon1 = M_PI * lon1 / 180.0;
+	lat2 = M_PI * lat2 / 180.0;
+	lon2 = M_PI * lon2 / 180.0;
+
+	double dlat = lat2 - lat1;
+	double dlon = lon2 - lon1;
+	double dh = elev2 - elev1;
+
+	double a = sin(dlat / 2) * sin(dlat / 2) + cos(lat1) * cos(lat2) * sin(dlon / 2) * sin(dlon / 2);
+	double c = 2 * atan2(sqrt(a), sqrt(1 - a));
+
+	double distance = R * c;
+
+	return distance;
+}
+// Function to calculate the initial bearing in degrees with altitude
+double bearing_with_altitude(double lat1, double lon1, double elev1, double lat2, double lon2, double elev2) {
+	// Convert latitude and longitude from degrees to radians
+	lat1 = lat1 * M_PI / 180.0;
+	lon1 = lon1 * M_PI / 180.0;
+	lat2 = lat2 * M_PI / 180.0;
+	lon2 = lon2 * M_PI / 180.0;
+
+	// Calculate differences in latitude, longitude, and altitude
+	double dlon = lon2 - lon1;
+
+	// Calculate x, y components for bearing calculation
+	double y = sin(dlon) * cos(lat2);
+	double x = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dlon);
+
+	// Calculate initial bearing in degrees
+	double initial_bearing = atan2(y, x) * 180.0 / M_PI;
+	initial_bearing = fmod(initial_bearing + 360, 360); // Normalize to [0, 360] degrees
+
+	return initial_bearing;
 }
