@@ -7,10 +7,11 @@
 #include <corecrt_math_defines.h>
 #include "warning.h"
 #include <string>
+#include <GL/freeglut.h>
 struct Point3D {
     double x,y,z;
 };
-const double soldier[3] = { 153.333,253.2, 3.5 };
+const double soldier[3] = { 37.7749,-122.4194, 15 };
 const double g = 9.81;// acceleration due to gravity (m/s^2)
 const double velocity = 975;
 double solveIntersectionTime(std::vector<double>& relativePos, std::vector<double>& relativeVel);
@@ -97,7 +98,11 @@ Point3D who_will_edit_the_position_and_intercept_the_bullet(double locationX, do
     double relative_location[3] = { locationX - soldier[0],locationY - soldier[1],locationZ - soldier[2] };
     double interceptionTime;//The time required for the two objects to intersect
     Point3D adjustedInterceptionPoint = { 0,0,0 };
-    if ((interceptionTime = solveIntersectionTime(relative_location, relative_speed)) == -0.1)
+    std::vector<double> location;
+    location.assign(relative_location, relative_location + 3);
+    std::vector<double> speed;
+    speed.assign(relative_speed, relative_speed + 3);
+    if ((interceptionTime = solveIntersectionTime(location, speed)) == -0.1)
         return adjustedInterceptionPoint;
 
     Point3D interceptionPoint;
