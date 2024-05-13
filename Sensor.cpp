@@ -3,7 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <random>
-#include <cmath>
+#include <cmath>   
 using namespace std;
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -12,20 +12,7 @@ std::mutex mtx;
 Sensor::Sensor()
 {
 }
-Sensor::Sensor(const double* locationSensorOfSoldier)
-{
-	this->locationSensorOfSoldier[0] =locationSensorOfSoldier[0];
-	this->locationSensorOfSoldier[1] =locationSensorOfSoldier[1];
-	this->locationSensorOfSoldier[2] = locationSensorOfSoldier[2];
-}
-
-void Sensor::LocationUpdate(double* locationSensorOfSoldier)
-{
-	this->locationSensorOfSoldier[0] = locationSensorOfSoldier[0];
-	this->locationSensorOfSoldier[1] = locationSensorOfSoldier[1];
-	this->locationSensorOfSoldier[2] = locationSensorOfSoldier[2];
-}
- void Sensor::ShotDetectionAndAlert()
+ void Sensor::Shot_Detection_And_warning(Solider& solider)
 {
 	while (true) 
 	{
@@ -45,12 +32,12 @@ void Sensor::LocationUpdate(double* locationSensorOfSoldier)
 			std::chrono::steady_clock::time_point current_time = std::chrono::steady_clock::now();
 			elapsed_time = std::chrono::duration_cast<std::chrono::seconds>(newTime - current_time).count();
 		}*/
-		double max_range_detectionX = this->locationSensorOfSoldier[0] +(100/111000);
-		double min_range_detectionX = this->locationSensorOfSoldier[0] -(100 / 111000);
-		double max_range_detectionY = this->locationSensorOfSoldier[1] + (100 / 111000);
-		double min_range_detectionY = this->locationSensorOfSoldier[1] - (100 / 111000);
-		double max_range_detectionZ = this->locationSensorOfSoldier[2] + 100;
-		double min_range_detectionZ = this->locationSensorOfSoldier[2] - 100;
+		double max_range_detectionX = solider.Get()[0] + (100 / 111000);
+		double min_range_detectionX = solider.Get()[0] - (100 / 111000);
+		double max_range_detectionY = solider.Get()[1] + (100 / 111000);
+		double min_range_detectionY = solider.Get()[1] - (100 / 111000);
+		double max_range_detectionZ = solider.Get()[2] + 100;
+		double min_range_detectionZ = solider.Get()[2] - 100;
 
 		uniform_real_distribution<double> dis(min_range_detectionX, max_range_detectionX);
 		double LocationX = dis(gen);
@@ -59,9 +46,9 @@ void Sensor::LocationUpdate(double* locationSensorOfSoldier)
 		uniform_real_distribution<double> dis2(min_range_detectionZ, max_range_detectionZ);
 		double LocationZ = dis2(gen);
 
-		double DirectionOfTheShotFromTheSoldier = bearing_with_altitude(locationSensorOfSoldier[0], locationSensorOfSoldier[1], locationSensorOfSoldier[2], LocationX, LocationY, LocationZ);
+		double DirectionOfTheShotFromTheSoldier = bearing_with_altitude(solider.Get()[0], solider.Get()[1], solider.Get()[2], LocationX, LocationY, LocationZ);
 
-		double distance = haversine_distance(locationSensorOfSoldier[0], locationSensorOfSoldier[1], locationSensorOfSoldier[2],LocationX,LocationY,LocationZ);
+		double distance = haversine_distance(solider.Get()[0], solider.Get()[1], solider.Get()[2],LocationX,LocationY,LocationZ);
 		
 		ofstream outputFile("../Src/data.txt", ios::app);
 		mtx.lock();
@@ -81,13 +68,7 @@ void Sensor::LocationUpdate(double* locationSensorOfSoldier)
 	}
 }
 
-
-double* Sensor::GettingTheLocation()
-{
-	return this->locationSensorOfSoldier;
-}
-
-string Sensor::ReceivingAnAlertFromTheSensor()
+string Sensor::Receiving_And_Warning_From_The_Sensor()
 {
 	string alert = "";
 	ifstream file("../Src/data.txt");
@@ -157,7 +138,7 @@ double Sensor::haversine_distance(double lat1, double lon1, double elev1, double
 	return distance;
 }
 // Function to calculate the initial bearing in degrees with altitude
-double bearing_with_altitude(double lat1, double lon1, double elev1, double lat2, double lon2, double elev2) {
+double Sensor::bearing_with_altitude(double lat1, double lon1, double elev1, double lat2, double lon2, double elev2) {
 	// Convert latitude and longitude from degrees to radians
 	lat1 = lat1 * M_PI / 180.0;
 	lon1 = lon1 * M_PI / 180.0;

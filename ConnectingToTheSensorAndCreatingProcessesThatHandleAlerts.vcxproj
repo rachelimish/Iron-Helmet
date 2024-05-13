@@ -131,12 +131,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Solider.cpp" />
     <ClCompile Include="Warning.cpp" />
     <ClCompile Include="ConnectingToTheSensorAndCreatingProcessesThatHandleAlerts.cpp" />
     <ClCompile Include="Sensor.cpp" />
     <ClCompile Include="WarningQueue.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Solider.h" />
     <ClInclude Include="Warning.h" />
     <ClInclude Include="Sensor.h" />
     <ClInclude Include="WarningQueue.h" />

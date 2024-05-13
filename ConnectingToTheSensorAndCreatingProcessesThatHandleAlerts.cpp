@@ -8,46 +8,85 @@
 #include "warning.h"
 #include <string>
 #include <GL/freeglut.h>
+#include "Solider.h"
+
 struct Point3D {
     double x,y,z;
 };
-const double soldier[3] = { 37.7749,-122.4194, 15 };
 const double g = 9.81;// acceleration due to gravity (m/s^2)
 const double velocity = 975;
-double solveIntersectionTime(std::vector<double>& relativePos, std::vector<double>& relativeVel);
-void WhichWillEditALocation(string alert);
-void calculateProjectileTrajectory3D(double x0, double y0, double z0, double angleX, double angleY, double g, double timeStep, double totalTime);
-int main()
+void display();
+void init();
+double solveIntersectionTime(std::vector<double> relativePos, std::vector<double> relativeVel);
+void Receiving_An_Alert_And_Calculating_Additional_Data(string alert);
+void Calculate_A_Projectile_Trajectory_In_3D(double x0, double y0, double z0, double angleX, double angleY, double timeStep, double totalTime);
+Point3D Intercept_Location_Calculation(double locationX, double  locationY, double locationZ, double angleX, double angleY);
+void Create_A_Thread_For_Each_Warning();
+static double solider1[3] = { 37.7749,-122.4194, 15 };
+static Solider solider(solider1);
+int main(int argc, char** argv)
 {
-    Sensor sensor(soldier);
 
-    std::thread sensorThread([&sensor]() {
-        sensor.ShotDetectionAndAlert();
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+    glutCreateWindow("3D Red Dot");
+
+    glEnable(GL_DEPTH_TEST);
+
+    glutDisplayFunc(display);
+    init();
+
+    glutMainLoop();
+   
+
+
+    Sensor sensor;
+    Solider mySolider(solider);
+    std::thread sensorThread([&sensor, &mySolider]() {
+        sensor.Shot_Detection_And_warning(mySolider);
         });
-    sensorThread.joinable();
+    sensorThread.join();
 
     // Ensure the thread is joinable so it can run
     //if (warningThrea.joinable()) {
     //    warningThrea.join();
     //}
     /*sf::RenderWindow window(sf::VideoMode(800, 600), "Projectile Trajectory Visualization");*/
-    string line = "";
-     //string WarningName;
-    while (true)
-    {
-        while ((line = sensor.ReceivingAnAlertFromTheSensor()) != "")
-        {
-            // WarningName = "Warning" +to_string(mone);
-            thread WarningName(WhichWillEditALocation,line);
-            WarningName.join();
-            //mone++;
-        }
-    }
+    std::thread Receiving_data_from_the_sensor(Create_A_Thread_For_Each_Warning);
+    Receiving_data_from_the_sensor.join();
+
+
 
         return 0;
     }
 
-void calculateProjectileTrajectory3D(double x0, double y0, double z0, double angleX, double angleY, double timeStep, double totalTime)
+
+void display() {
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluPerspective(45.0, 1.0, 1.0, 100.0);
+
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    gluLookAt(0, 0, 5, 0, 0, 0, 0, 1, 0);
+
+    glColor3f(1.0, 0.0, 0.0); // Red color
+    glPointSize(10.0);
+
+    glBegin(GL_POINTS);
+    glVertex3f(0, 0, 2);// Fixed position for the red dot
+    glEnd();
+
+    glutSwapBuffers();
+}
+
+void init() {
+    glClearColor(0.0, 0.0, 0.0, 1.0);
+}
+
+void Calculate_A_Projectile_Trajectory_In_3D(double x0, double y0, double z0, double angleX, double angleY, double timeStep, double totalTime)
 {
     sf::RenderWindow window(sf::VideoMode(800, 600), "Projectile Trajectory Visualization");
     double vx = velocity * cos(angleY) * cos(angleX);
@@ -58,7 +97,7 @@ void calculateProjectileTrajectory3D(double x0, double y0, double z0, double ang
         double x = x0 + vx * t;
         double y = y0 + vy * t - 0.5 * g * t * t;
         double z = z0 + vz * t;
-
+        /*
         sf::Event event;
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed) {
@@ -72,9 +111,11 @@ void calculateProjectileTrajectory3D(double x0, double y0, double z0, double ang
         shape.setPosition(x, y);
         window.draw(shape);
         window.display();
+        */
+
     }
 }
-Point3D who_will_edit_the_position_and_intercept_the_bullet(double locationX, double  locationY, double locationZ, double angleX, double angleY)
+Point3D Intercept_Location_Calculation(double locationX, double  locationY, double locationZ, double angleX, double angleY)
 {
     double projectile_vx = velocity * cos(angleY) * cos(angleX);
     double projectile_vy = velocity * sin(angleY);
@@ -95,7 +136,7 @@ Point3D who_will_edit_the_position_and_intercept_the_bullet(double locationX, do
     //The relative speed
     double relative_speed[3] = { projectile_vx - Laser_beam_vx ,projectile_vy - Laser_beam_vy ,projectile_vz - Laser_beam_vz };
     //The relative location
-    double relative_location[3] = { locationX - soldier[0],locationY - soldier[1],locationZ - soldier[2] };
+    double relative_location[3] = { locationX - solider1[0],locationY - solider1[1],locationZ - solider1[2] };
     double interceptionTime;//The time required for the two objects to intersect
     Point3D adjustedInterceptionPoint = { 0,0,0 };
     std::vector<double> location;
@@ -123,7 +164,7 @@ Point3D who_will_edit_the_position_and_intercept_the_bullet(double locationX, do
         return adjustedInterceptionPoint;
 
 }
-double solveIntersectionTime(double relativePos[], double relativeVel[]) {
+double solveIntersectionTime(std::vector<double> relativePos, std::vector<double> relativeVel) {
     // Assuming equations of motion: relativePos[i] = relativeVel[i] * t for each component i
     double time = -1.0; // Initialize time to a negative value
 
@@ -144,7 +185,7 @@ double solveIntersectionTime(double relativePos[], double relativeVel[]) {
     return time;
 }
 
-void WhichWillEditALocation(string Warning) 
+void Receiving_An_Alert_And_Calculating_Additional_Data(string Warning)
 {
     char delimiter = ',';
    	vector<double> outputStrings = {};
@@ -185,6 +226,22 @@ void WhichWillEditALocation(string Warning)
     double totalTime = distance / velocity;
 
 
-    calculateProjectileTrajectory3D(locationX, locationY, locationZ, angleX, angleY,0.1, totalTime);
+    Calculate_A_Projectile_Trajectory_In_3D(locationX, locationY, locationZ, angleX, angleY,0.01, totalTime);
 
+}
+void Create_A_Thread_For_Each_Warning()
+{
+    Sensor sensor;
+    string line = "";
+    //string WarningName;
+    while (true)
+    {
+        while ((line = sensor.Receiving_And_Warning_From_The_Sensor()) != "")
+        {
+            // WarningName = "Warning" +to_string(mone);
+            thread WarningName(Receiving_An_Alert_And_Calculating_Additional_Data, line);
+            WarningName.join();
+            //mone++;
+        }
+    }
 }
