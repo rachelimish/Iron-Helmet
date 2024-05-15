@@ -9,12 +9,42 @@
 #include <string>
 #include <GL/freeglut.h>
 #include "Solider.h"
+//#include <windows.devices.geolocation.h>
+//#include <Windows.h>
+//#include <Windows.Foundation.h>
+//#include <ppltasks.h>
+//#include <LocationApi.h>
+//#include <rpcndr.h>
+//using namespace Windows::Devices::Geolocation;
+//#include <cpprest/http_client.h>
+//
+//using namespace web;
+//using namespace web::http;
+//using namespace web::http::client;
+//using namespace utility;
+#include <Windows.h>
+#include <winhttp.h>
+//#pragma comment(lib, "winhttp.lib")
+#include <fstream>
+#include <nlohmann/json.hpp>
+#include <wininet.h>
+//#include <cpprest/http_client.h>
+//#include <cpprest/filestream.h>
+//#include <http.h>
+//using namespace web;
+//using namespace web::http;
+//using namespace web::http::client;
+#pragma comment(lib, "wininet.lib")
+using json = nlohmann::json;
+// Replace "YOUR_API_KEY" with your actual API key
 
+const std::string API_KEY = "AIzaSyDM-oP_Aq9ENDsGp-D7aebmvM-VeEkKjys";
 struct Point3D {
     double x,y,z;
 };
 const double g = 9.81;// acceleration due to gravity (m/s^2)
 const double velocity = 975;
+std::string GetLocationData();
 void display();
 void init();
 double solveIntersectionTime(std::vector<double> relativePos, std::vector<double> relativeVel);
@@ -23,40 +53,62 @@ void Calculate_A_Projectile_Trajectory_In_3D(double x0, double y0, double z0, do
 Point3D Intercept_Location_Calculation(double locationX, double  locationY, double locationZ, double angleX, double angleY);
 void Create_A_Thread_For_Each_Warning();
 static double solider1[3] = { 37.7749,-122.4194, 15 };
-static Solider solider(solider1);
 int main(int argc, char** argv)
 {
+   /* CoInitializeEx(NULL, COINIT_MULTITHREADED);
+    ABI::Windows::Foundation::IAsyncOperation<Windows::Devices::Geolocation::GeolocationAccessStatus>^ accessRequest = Windows::Devices::Geolocation::Geolocator::RequestAccessAsync();*/
 
-    glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
-    glutCreateWindow("3D Red Dot");
+    //// Initialize the Geolocator
+    //Geolocator^ geolocator = ref new Geolocator();
 
-    glEnable(GL_DEPTH_TEST);
+    //// Request access to location
+    //create_task(geolocator->GetGeopositionAsync()).then([](Geoposition^ pos)
+    //    {
+    //        double latitude = pos->Coordinate->Point->Position.Latitude;
+    //        double longitude = pos->Coordinate->Point->Position.Longitude;
 
-    glutDisplayFunc(display);
-    init();
+    //        std::cout << "Latitude: " << latitude << std::endl;
+    //        std::cout << "Longitude: " << longitude << std::endl;
+    //    });
+    std::string locationData = GetLocationData();
+    if (locationData.find("Error") != std::string::npos)
+    {
+        std::cout << locationData << std::endl;
+        return 1;
+    }
+    json parsedData = json::parse(locationData);
 
-    glutMainLoop();
-   
+    // Extract latitude, longitude, and 'Z' value
+    double latitude = parsedData["lat"];
+    double longitude = parsedData["lon"];
+    std::cout << "Latitude: " << latitude << std::endl;
+    std::cout << "Longitude: " << longitude << std::endl;
+    std::cout << "Location Data: " << locationData<< std::endl;
+    //glutInit(&argc, argv);
+    //glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+    //glutCreateWindow("3D Red Dot");
 
+    //glEnable(GL_DEPTH_TEST);
 
-    Sensor sensor;
-    Solider mySolider(solider);
-    std::thread sensorThread([&sensor, &mySolider]() {
-        sensor.Shot_Detection_And_warning(mySolider);
-        });
-    sensorThread.join();
+    //glutDisplayFunc(display);
+    //init();
 
-    // Ensure the thread is joinable so it can run
-    //if (warningThrea.joinable()) {
-    //    warningThrea.join();
-    //}
-    /*sf::RenderWindow window(sf::VideoMode(800, 600), "Projectile Trajectory Visualization");*/
-    std::thread Receiving_data_from_the_sensor(Create_A_Thread_For_Each_Warning);
-    Receiving_data_from_the_sensor.join();
+    //glutMainLoop();
+    //Sensor sensor;
+    //Solider solider(solider1);
+    //std::thread sensorThread([&sensor, &solider]() {
+    //    sensor.Shot_Detection_And_warning(solider);
+    //    });
+    //
 
-
-
+    //// Ensure the thread is joinable so it can run
+    ////if (warningThrea.joinable()) {
+    ////    warningThrea.join();
+    ////}
+    ///*sf::RenderWindow window(sf::VideoMode(800, 600), "Projectile Trajectory Visualization");*/
+    //std::thread Receiving_data_from_the_sensor(Create_A_Thread_For_Each_Warning);
+    //Receiving_data_from_the_sensor.join();
+    //sensorThread.join();
         return 0;
     }
 
@@ -85,7 +137,66 @@ void display() {
 void init() {
     glClearColor(0.0, 0.0, 0.0, 1.0);
 }
+std::string GetLocationData()
+{
+    HINTERNET hInternet = InternetOpenA("AIzaSyDM-oP_Aq9ENDsGp-D7aebmvM-VeEkKjys", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
+    if (!hInternet)
+    {
+        return "Error: InternetOpen failed";
+    }
 
+    HINTERNET hConnect = InternetOpenUrlA(hInternet, "https://maps.googleapis.com/maps/api/json", NULL, 0, INTERNET_FLAG_RELOAD, 0);
+    if (!hConnect)
+    {
+        InternetCloseHandle(hInternet);
+        return "Error: InternetOpenUrl failed";
+    }
+
+    char buffer[1024];
+    DWORD bytesRead = 0;
+    std::string result = "";
+
+    while (InternetReadFile(hConnect, buffer, sizeof(buffer), &bytesRead) && bytesRead > 0)
+    {
+        result.append(buffer, bytesRead);
+    }
+
+    InternetCloseHandle(hConnect);
+    InternetCloseHandle(hInternet);
+
+    // Parse the JSON response
+
+    return result;
+}
+//std::string GetLocationData()
+//{
+//    HINTERNET hInternet = InternetOpenA("AIzaSyDM-oP_Aq9ENDsGp-D7aebmvM-VeEkKjys", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
+//    if (!hInternet)
+//    {
+//        return "Error: InternetOpen failed";
+//    }
+//
+//    HINTERNET hConnect = InternetOpenUrlA(hInternet, "http://ip-api.com/json", NULL, 0, INTERNET_FLAG_RELOAD, 0);
+//    if (!hConnect)
+//    {
+//        InternetCloseHandle(hInternet);
+//        return "Error: InternetOpenUrl failed";
+//    }
+//
+//    char buffer[1024];
+//    DWORD bytesRead = 0;
+//    std::string result = "";
+//
+//    while (InternetReadFile(hConnect, buffer, sizeof(buffer), &bytesRead) && bytesRead > 0)
+//    {
+//        result.append(buffer, bytesRead);
+//    }
+//
+//    InternetCloseHandle(hConnect);
+//    InternetCloseHandle(hInternet);
+//
+//    return result;
+//}
 void Calculate_A_Projectile_Trajectory_In_3D(double x0, double y0, double z0, double angleX, double angleY, double timeStep, double totalTime)
 {
     sf::RenderWindow window(sf::VideoMode(800, 600), "Projectile Trajectory Visualization");
@@ -104,7 +215,6 @@ void Calculate_A_Projectile_Trajectory_In_3D(double x0, double y0, double z0, do
                 window.close();
             }
         }
-
         window.clear();
         sf::CircleShape shape(5);
         shape.setFillColor(sf::Color::Red);
@@ -112,7 +222,6 @@ void Calculate_A_Projectile_Trajectory_In_3D(double x0, double y0, double z0, do
         window.draw(shape);
         window.display();
         */
-
     }
 }
 Point3D Intercept_Location_Calculation(double locationX, double  locationY, double locationZ, double angleX, double angleY)
@@ -221,12 +330,15 @@ void Receiving_An_Alert_And_Calculating_Additional_Data(string Warning)
     double launchAngleRad = atan((initVelocityY + sqrt(pow(initVelocityY, 2) + 2 * 9.81 * height)) / initVelocityX); // Calculate launch angle in radians
 
     double launchAngleDeg = launchAngleRad * 180.0 / M_PI; // Convert launch angle from radians to degrees
-    double angleX = std::acos(std::cos(launchAngleDeg * M_PI / 180.0) / std::sqrt(std::cos(launchAngleDeg * M_PI / 180.0) * std::cos(launchAngleDeg * M_PI / 180.0) + std::sin(launchAngleDeg * M_PI / 180.0) * std::sin(launchAngleDeg * M_PI / 180.0)));
-    double angleY = std::asin(std::sin(launchAngleDeg * M_PI / 180.0) / std::sqrt(std::cos(launchAngleDeg * M_PI / 180.0) * std::cos(launchAngleDeg * M_PI / 180.0) + std::sin(launchAngleDeg * M_PI / 180.0) * std::sin(launchAngleDeg * M_PI / 180.0)));
+    double angleX = std::acos(std::cos(launchAngleDeg * M_PI / 180.0) / std::sqrt(std::cos(launchAngleDeg * M_PI / 180.0) * 
+        std::cos(launchAngleDeg * M_PI / 180.0) + std::sin(launchAngleDeg * M_PI / 180.0) * std::sin(launchAngleDeg * M_PI / 180.0)));
+    double angleY = std::asin(std::sin(launchAngleDeg * M_PI / 180.0) / std::sqrt(std::cos(launchAngleDeg * M_PI / 180.0) * 
+        std::cos(launchAngleDeg * M_PI / 180.0) + std::sin(launchAngleDeg * M_PI / 180.0) * std::sin(launchAngleDeg * M_PI / 180.0)));
     double totalTime = distance / velocity;
 
 
     Calculate_A_Projectile_Trajectory_In_3D(locationX, locationY, locationZ, angleX, angleY,0.01, totalTime);
+    Intercept_Location_Calculation(locationX, locationY, locationZ, angleX, angleY);
 
 }
 void Create_A_Thread_For_Each_Warning()
