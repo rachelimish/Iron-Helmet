@@ -9,6 +9,7 @@
 #include <string>
 #include <GL/freeglut.h>
 #include "Solider.h"
+#include <gmp.h>
 //#include <windows.devices.geolocation.h>
 //#include <Windows.h>
 //#include <Windows.Foundation.h>
@@ -28,6 +29,7 @@
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <wininet.h>
+#include <curl/curl.h>
 //#include <cpprest/http_client.h>
 //#include <cpprest/filestream.h>
 //#include <http.h>
@@ -44,7 +46,9 @@ struct Point3D {
 };
 const double g = 9.81;// acceleration due to gravity (m/s^2)
 const double velocity = 975;
-std::string GetLocationData();
+size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* data);
+void ExtractLongitudeAndLatitude(const std::string& jsonResponse, double& longitude, double& latitude);
+std::string GetLocationData(const std::string& apiKey);
 void display();
 void init();
 double solveIntersectionTime(std::vector<double> relativePos, std::vector<double> relativeVel);
@@ -70,19 +74,39 @@ int main(int argc, char** argv)
     //        std::cout << "Latitude: " << latitude << std::endl;
     //        std::cout << "Longitude: " << longitude << std::endl;
     //    });
-    std::string locationData = GetLocationData();
-    if (locationData.find("Error") != std::string::npos)
+    std::string locationData = GetLocationData(API_KEY);
+   /* if (locationData.find("Error") != std::string::npos)
     {
         std::cout << locationData << std::endl;
         return 1;
-    }
-    json parsedData = json::parse(locationData);
+    }*/
+ /*   mpf_set_default_prec(6 * 3.32193);*/ // Setting precision for 6 decimal places
+    //mpf_set_default_prec(20);
+    //
+    //// Initialize a variable with arbitrary precision
+    //mpf_t latitude;
+    //mpf_set_d(latitude, 3.14159265358979323846);
+    //mpf_init(latitude);
 
-    // Extract latitude, longitude, and 'Z' value
-    double latitude = parsedData["lat"];
-    double longitude = parsedData["lon"];
-    std::cout << "Latitude: " << latitude << std::endl;
-    std::cout << "Longitude: " << longitude << std::endl;
+    //// Assign a value to the variable with 6 digits after the decimal point
+    double longitude = 0.0;
+    double latitude = 0.0;
+    //mpf_t longitude;
+    //mpf_set_d(longitude, 3.14159265358979323846);
+    //mpf_init(longitude);
+
+    // Assign a value to the variable with 6 digits after the decimal point
+
+    ExtractLongitudeAndLatitude(locationData, longitude, latitude);
+
+    // Print the extracted longitude and latitude
+    std::cout << "Latitude: " << std::fixed << std::setprecision(6)<< latitude << std::endl;
+    std::cout << "longitude: " << std::fixed << std::setprecision(6) << longitude << std::endl;
+    //// Extract latitude, longitude, and 'Z' value
+    //double latitude = parsedData["lat"];
+    //double longitude = parsedData["lon"];
+    //std::cout << "Latitude: " << latitude << std::endl;
+    //std::cout << "Longitude: " << longitude << std::endl;
     std::cout << "Location Data: " << locationData<< std::endl;
     //glutInit(&argc, argv);
     //glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
@@ -137,37 +161,84 @@ void display() {
 void init() {
     glClearColor(0.0, 0.0, 0.0, 1.0);
 }
-std::string GetLocationData()
-{
-    HINTERNET hInternet = InternetOpenA("AIzaSyDM-oP_Aq9ENDsGp-D7aebmvM-VeEkKjys", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
-    if (!hInternet)
-    {
-        return "Error: InternetOpen failed";
-    }
-
-    HINTERNET hConnect = InternetOpenUrlA(hInternet, "https://maps.googleapis.com/maps/api/json", NULL, 0, INTERNET_FLAG_RELOAD, 0);
-    if (!hConnect)
-    {
-        InternetCloseHandle(hInternet);
-        return "Error: InternetOpenUrl failed";
-    }
-
-    char buffer[1024];
-    DWORD bytesRead = 0;
-    std::string result = "";
-
-    while (InternetReadFile(hConnect, buffer, sizeof(buffer), &bytesRead) && bytesRead > 0)
-    {
-        result.append(buffer, bytesRead);
-    }
-
-    InternetCloseHandle(hConnect);
-    InternetCloseHandle(hInternet);
-
-    // Parse the JSON response
-
-    return result;
+size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* data) {
+    data->append((char*)contents, size * nmemb);
+    return size * nmemb;
 }
+
+std::string GetLocationData(const std::string& apiKey) {
+    std::string apiUrl = "https://www.googleapis.com/geolocation/v1/geolocate?key=" + apiKey;
+    std::string response;
+
+    CURL* curl = curl_easy_init();
+    if (curl) {
+        curl_easy_setopt(curl, CURLOPT_URL, apiUrl.c_str());
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+
+        // Set the POST data to send to the API
+        curl_easy_setopt(curl, CURLOPT_POST, 1L);
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "{}"); // Empty JSON object as POST data
+
+        CURLcode res = curl_easy_perform(curl);
+        curl_easy_cleanup(curl);
+
+        if (res != CURLE_OK) {
+            return "Error: Failed to perform cURL request";
+        }
+    }
+    else {
+        return "Error: Failed to initialize cURL";
+    }
+
+    return response;
+}
+void ExtractLongitudeAndLatitude(const std::string& jsonResponse, double&longitude, double& latitude) {
+    try {
+        json data = json::parse(jsonResponse);
+
+        // Extract longitude and latitude from the JSON object
+        latitude = data["location"]["lat"];
+        longitude = data["location"]["lng"];
+       /* mpf_set_str(latitude, to_string(data["location"]["lng"]).c_str(), 10);
+        mpf_set_str(longitude,to_string(data["location"]["lng"]).c_str(), 10);*/
+       
+    }
+    catch (json::parse_error& e) {
+        std::cerr << "JSON parsing error: " << e.what() << std::endl;
+    }
+}
+//std::string GetLocationData()
+//{
+//    HINTERNET hInternet = InternetOpenA("AIzaSyDM-oP_Aq9ENDsGp-D7aebmvM-VeEkKjys", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
+//    if (!hInternet)
+//    {
+//        return "Error: InternetOpen failed";
+//    }
+//
+//    HINTERNET hConnect = InternetOpenUrlA(hInternet, "https://maps.googleapis.com/maps/api/json", NULL, 0, INTERNET_FLAG_RELOAD, 0);
+//    if (!hConnect)
+//    {
+//        InternetCloseHandle(hInternet);
+//        return "Error: InternetOpenUrl failed";
+//    }
+//
+//    char buffer[1024];
+//    DWORD bytesRead = 0;
+//    std::string result = "";
+//
+//    while (InternetReadFile(hConnect, buffer, sizeof(buffer), &bytesRead) && bytesRead > 0)
+//    {
+//        result.append(buffer, bytesRead);
+//    }
+//
+//    InternetCloseHandle(hConnect);
+//    InternetCloseHandle(hInternet);
+//
+//    // Parse the JSON response
+//
+//    return result;
+//}
 //std::string GetLocationData()
 //{
 //    HINTERNET hInternet = InternetOpenA("AIzaSyDM-oP_Aq9ENDsGp-D7aebmvM-VeEkKjys", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
