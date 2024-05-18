@@ -10,37 +10,12 @@
 #include <GL/freeglut.h>
 #include "Solider.h"
 #include <gmp.h>
-//#include <windows.devices.geolocation.h>
-//#include <Windows.h>
-//#include <Windows.Foundation.h>
-//#include <ppltasks.h>
-//#include <LocationApi.h>
-//#include <rpcndr.h>
-//using namespace Windows::Devices::Geolocation;
-//#include <cpprest/http_client.h>
-//
-//using namespace web;
-//using namespace web::http;
-//using namespace web::http::client;
-//using namespace utility;
 #include <Windows.h>
 #include <winhttp.h>
-//#pragma comment(lib, "winhttp.lib")
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <wininet.h>
 #include <curl/curl.h>
-//#include <cpprest/http_client.h>
-//#include <cpprest/filestream.h>
-//#include <http.h>
-//using namespace web;
-//using namespace web::http;
-//using namespace web::http::client;
-#pragma comment(lib, "wininet.lib")
-using json = nlohmann::json;
-// Replace "YOUR_API_KEY" with your actual API key
-
-const std::string API_KEY = "AIzaSyDM-oP_Aq9ENDsGp-D7aebmvM-VeEkKjys";
 struct Point3D {
     double x,y,z;
 };
@@ -59,55 +34,45 @@ void Create_A_Thread_For_Each_Warning();
 static double solider1[3] = { 37.7749,-122.4194, 15 };
 int main(int argc, char** argv)
 {
-   /* CoInitializeEx(NULL, COINIT_MULTITHREADED);
-    ABI::Windows::Foundation::IAsyncOperation<Windows::Devices::Geolocation::GeolocationAccessStatus>^ accessRequest = Windows::Devices::Geolocation::Geolocator::RequestAccessAsync();*/
 
-    //// Initialize the Geolocator
-    //Geolocator^ geolocator = ref new Geolocator();
+    //STARTUPINFO si;
+    //PROCESS_INFORMATION pi;
 
-    //// Request access to location
-    //create_task(geolocator->GetGeopositionAsync()).then([](Geoposition^ pos)
-    //    {
-    //        double latitude = pos->Coordinate->Point->Position.Latitude;
-    //        double longitude = pos->Coordinate->Point->Position.Longitude;
+    //ZeroMemory(&si, sizeof(si));
+    //si.cb = sizeof(si);
+    //ZeroMemory(&pi, sizeof(pi));
 
-    //        std::cout << "Latitude: " << latitude << std::endl;
-    //        std::cout << "Longitude: " << longitude << std::endl;
-    //    });
-    std::string locationData = GetLocationData(API_KEY);
-   /* if (locationData.find("Error") != std::string::npos)
-    {
-        std::cout << locationData << std::endl;
-        return 1;
-    }*/
- /*   mpf_set_default_prec(6 * 3.32193);*/ // Setting precision for 6 decimal places
-    //mpf_set_default_prec(20);
-    //
-    //// Initialize a variable with arbitrary precision
-    //mpf_t latitude;
-    //mpf_set_d(latitude, 3.14159265358979323846);
-    //mpf_init(latitude);
+    //// Create a new process
+    //if (!CreateProcess(NULL, "your_executable_name.exe", NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
+    //    std::cerr << "Failed to create process. Error code: " << GetLastError() << "\n";
+    //    return 1;
+    //}
 
-    //// Assign a value to the variable with 6 digits after the decimal point
-    double longitude = 0.0;
-    double latitude = 0.0;
-    //mpf_t longitude;
-    //mpf_set_d(longitude, 3.14159265358979323846);
-    //mpf_init(longitude);
+    //// Wait for the child process to finish
+    //WaitForSingleObject(pi.hProcess, INFINITE);
 
-    // Assign a value to the variable with 6 digits after the decimal point
+    //// Close process and thread handles
+    //CloseHandle(pi.hProcess);
 
-    ExtractLongitudeAndLatitude(locationData, longitude, latitude);
+    Solider solider;
+    std::thread solider_location([&solider] {
+        solider.Thread_location();
+            });
+    solider_location.join();
+    //std::string locationData = GetLocationData("AIzaSyDM-oP_Aq9ENDsGp-D7aebmvM-VeEkKjys");
+    //double longitude = 0.0;
+    //double latitude = 0.0;
+    //ExtractLongitudeAndLatitude(locationData, longitude, latitude);
 
-    // Print the extracted longitude and latitude
-    std::cout << "Latitude: " << std::fixed << std::setprecision(6)<< latitude << std::endl;
-    std::cout << "longitude: " << std::fixed << std::setprecision(6) << longitude << std::endl;
-    //// Extract latitude, longitude, and 'Z' value
-    //double latitude = parsedData["lat"];
-    //double longitude = parsedData["lon"];
-    //std::cout << "Latitude: " << latitude << std::endl;
-    //std::cout << "Longitude: " << longitude << std::endl;
-    std::cout << "Location Data: " << locationData<< std::endl;
+    //// Print the extracted longitude and latitude
+    //std::cout << "Latitude: " << std::fixed << std::setprecision(6)<< latitude << std::endl;
+    //std::cout << "longitude: " << std::fixed << std::setprecision(6) << longitude << std::endl;
+    ////// Extract latitude, longitude, and 'Z' value
+    ////double latitude = parsedData["lat"];
+    ////double longitude = parsedData["lon"];
+    ////std::cout << "Latitude: " << latitude << std::endl;
+    ////std::cout << "Longitude: " << longitude << std::endl;
+    //std::cout << "Location Data: " << locationData<< std::endl;
     //glutInit(&argc, argv);
     //glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     //glutCreateWindow("3D Red Dot");
@@ -161,6 +126,30 @@ void display() {
 void init() {
     glClearColor(0.0, 0.0, 0.0, 1.0);
 }
+double X_Hash(double pointX, Solider& solider) 
+{
+    double X;
+    X = pointX - (solider.Get()[0]);
+    X = X * 111000;//Convert the distance to meters
+    X = X / 50;
+    return X;
+
+}
+double Y_Hash(double pointY, Solider& solider)
+{
+    double Y;
+    Y = pointY - (solider.Get()[1]);
+    Y = Y * 111000;//Convert the distance to meters
+    Y = Y / 50;
+    return Y;
+}
+double Z_Hash(double pointZ, Solider& solider)
+{
+    double Y;
+    Y = pointZ - (solider.Get()[2]);
+    Y = Y / 50;
+    return Y;
+}
 size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* data) {
     data->append((char*)contents, size * nmemb);
     return size * nmemb;
@@ -193,21 +182,21 @@ std::string GetLocationData(const std::string& apiKey) {
 
     return response;
 }
-void ExtractLongitudeAndLatitude(const std::string& jsonResponse, double&longitude, double& latitude) {
-    try {
-        json data = json::parse(jsonResponse);
-
-        // Extract longitude and latitude from the JSON object
-        latitude = data["location"]["lat"];
-        longitude = data["location"]["lng"];
-       /* mpf_set_str(latitude, to_string(data["location"]["lng"]).c_str(), 10);
-        mpf_set_str(longitude,to_string(data["location"]["lng"]).c_str(), 10);*/
-       
-    }
-    catch (json::parse_error& e) {
-        std::cerr << "JSON parsing error: " << e.what() << std::endl;
-    }
-}
+//void ExtractLongitudeAndLatitude(const std::string& jsonResponse, double&longitude, double& latitude) {
+//    try {
+//        json data = json::parse(jsonResponse);
+//
+//        // Extract longitude and latitude from the JSON object
+//        latitude = data["location"]["lat"];
+//        longitude = data["location"]["lng"];
+//       /* mpf_set_str(latitude, to_string(data["location"]["lng"]).c_str(), 10);
+//        mpf_set_str(longitude,to_string(data["location"]["lng"]).c_str(), 10);*/
+//       
+//    }
+//    catch (json::parse_error& e) {
+//        std::cerr << "JSON parsing error: " << e.what() << std::endl;
+//    }
+//}
 //std::string GetLocationData()
 //{
 //    HINTERNET hInternet = InternetOpenA("AIzaSyDM-oP_Aq9ENDsGp-D7aebmvM-VeEkKjys", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);

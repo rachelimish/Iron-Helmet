@@ -36,25 +36,20 @@ Sensor::Sensor()
 		double min_range_detectionX = solider.Get()[0] - (100 / 111000);
 		double max_range_detectionY = solider.Get()[1] + (100 / 111000);
 		double min_range_detectionY = solider.Get()[1] - (100 / 111000);
-		double max_range_detectionZ = solider.Get()[2] + 100;
-		double min_range_detectionZ = solider.Get()[2] - 100;
-
 		uniform_real_distribution<double> dis(min_range_detectionX, max_range_detectionX);
 		double LocationX = dis(gen);
 		uniform_real_distribution<double> dis1(min_range_detectionY, max_range_detectionY);
 		double LocationY = dis1(gen);
-		uniform_real_distribution<double> dis2(min_range_detectionZ, max_range_detectionZ);
-		double LocationZ = dis2(gen);
 
-		double DirectionOfTheShotFromTheSoldier = bearing_with_altitude(solider.Get()[0], solider.Get()[1], solider.Get()[2], LocationX, LocationY, LocationZ);
+		double DirectionOfTheShotFromTheSoldier = bearing_with_altitude(solider.Get()[0], solider.Get()[1], LocationX, LocationY);
 
-		double distance = haversine_distance(solider.Get()[0], solider.Get()[1], solider.Get()[2],LocationX,LocationY,LocationZ);
+		double distance = haversine_distance(solider.Get()[0], solider.Get()[1],LocationX,LocationY);
 		
 		ofstream outputFile("../Src/data.txt", ios::app);
 		mtx.lock();
 		if (outputFile.is_open())
 		{
-			outputFile << LocationX << "," << LocationY << "," << LocationZ << "," << DirectionOfTheShotFromTheSoldier << "," << distance << "," << endl;
+			outputFile << LocationX << "," << LocationY << "," << DirectionOfTheShotFromTheSoldier << "," << distance << "," << endl;
 
 			outputFile.close();
 			cout << "Data written to file successfully." << endl;
@@ -114,11 +109,9 @@ string Sensor::Receiving_And_Warning_From_The_Sensor()
 	mtx.unlock();
 	return alert;
 }
-
-// Function to calculate the distance using Haversine formula in meters
-double Sensor::haversine_distance(double lat1, double lon1, double elev1, double lat2, double lon2, double elev2)
+// Function to calculate the distance between two points in 2 dimensions using Haversine formula in meters
+double Sensor::haversine_distance(double lat1, double lon1, double lat2, double lon2)
 {
-	
 	const double R = 6371000.0; // Earth radius in meters
 
 	lat1 = M_PI * lat1 / 180.0;
@@ -128,7 +121,6 @@ double Sensor::haversine_distance(double lat1, double lon1, double elev1, double
 
 	double dlat = lat2 - lat1;
 	double dlon = lon2 - lon1;
-	double dh = elev2 - elev1;
 
 	double a = sin(dlat / 2) * sin(dlat / 2) + cos(lat1) * cos(lat2) * sin(dlon / 2) * sin(dlon / 2);
 	double c = 2 * atan2(sqrt(a), sqrt(1 - a));
@@ -137,15 +129,16 @@ double Sensor::haversine_distance(double lat1, double lon1, double elev1, double
 
 	return distance;
 }
-// Function to calculate the initial bearing in degrees with altitude
-double Sensor::bearing_with_altitude(double lat1, double lon1, double elev1, double lat2, double lon2, double elev2) {
+
+// Function to calculate the initial bearing in degrees without altitude
+double Sensor::bearing_with_altitude(double lat1, double lon1, double lat2, double lon2) {
 	// Convert latitude and longitude from degrees to radians
 	lat1 = lat1 * M_PI / 180.0;
 	lon1 = lon1 * M_PI / 180.0;
 	lat2 = lat2 * M_PI / 180.0;
 	lon2 = lon2 * M_PI / 180.0;
 
-	// Calculate differences in latitude, longitude, and altitude
+	// Calculate differences in latitude and longitude
 	double dlon = lon2 - lon1;
 
 	// Calculate x, y components for bearing calculation
@@ -158,3 +151,4 @@ double Sensor::bearing_with_altitude(double lat1, double lon1, double elev1, dou
 
 	return initial_bearing;
 }
+
