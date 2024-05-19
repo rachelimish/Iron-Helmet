@@ -22,7 +22,7 @@ Sensor::Sensor()
 		int When = dis3(gen);
 		cout << When << endl;
 		std::this_thread::sleep_for(std::chrono::seconds(When));
-		cout << "i wake uppppppppppppp!!!" << endl;
+		cout << "i woke uppppppppppppp!!!" << endl;
 		/*std::chrono::steady_clock::time_point current_time = std::chrono::steady_clock::now();
 		std::chrono::seconds duration(When);
 		std::chrono::steady_clock::time_point newTime = current_time + duration;

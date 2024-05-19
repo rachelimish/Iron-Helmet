@@ -131,7 +131,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Solider.cpp" />
+    <ClCompile Include="Solider.cpp">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\racheli\Desktop\פרויקטטט\curl-master;C:\Users\racheli\Desktop\פרויקטטט\freeglut-3.4.0;</AdditionalIncludeDirectories>
+    </ClCompile>
     <ClCompile Include="Warning.cpp" />
     <ClCompile Include="ConnectingToTheSensorAndCreatingProcessesThatHandleAlerts.cpp" />
     <ClCompile Include="Sensor.cpp" />

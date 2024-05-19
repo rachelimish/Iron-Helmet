@@ -6,6 +6,7 @@
 #include <thread>
 #include <chrono>
 #include <nlohmann/json.hpp>
+#include <corecrt_math_defines.h>
 //#include <wininet.h>
 #include <curl/curl.h>
 #include <Windows.h>
@@ -18,11 +19,12 @@ class Solider
 	double* location = new double[2];//Position of the sensor on the soldier
     const std::string apiKey = "AIzaSyDM-oP_Aq9ENDsGp-D7aebmvM-VeEkKjys";
 public:
+    // Static member variable to store the response data
     Solider();
     Solider(double* location);
     double* Get();//A function returned the location
     void Update();
-    size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* data);
+    static size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* data);
     void Thread_location();
 };
 

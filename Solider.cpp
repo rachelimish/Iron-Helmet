@@ -13,7 +13,7 @@ Solider::Solider(double* location)
 	return location;
 }
 
-void Solider::Update()
+ void Solider::Update()
 {
     std::string apiUrl = "https://www.googleapis.com/geolocation/v1/geolocate?key=" + apiKey;
     std::string response;
@@ -36,31 +36,72 @@ void Solider::Update()
         }
     }
     else {
-       std::cout<<"Error: Failed to initialize cURL"<<endl;
+        std::cout<<"Error: Failed to initialize cURL"<<endl;
     }
     try {
-        json data = json::parse(response);
+    json data = json::parse(response);
 
-        // Extract longitude and latitude from the JSON object
-        this->location[0] = data["location"]["lat"];
-        this->location[1] = data["location"]["lng"];
-        std::cout << "location " << std::fixed << std::setprecision(6) << this->location[0] << std::endl;
-        std::cout << "location " << std::fixed << std::setprecision(6) << this->location[1] << std::endl;
-    }
-    catch (json::parse_error& e) {
-        std::cerr << "JSON parsing error: " << e.what() << std::endl;
-    }
+    // Extract longitude and latitude from the JSON object
+    this->location[0] = data["location"]["lat"];
+    this->location[1] = data["location"]["lng"];
+    std::cout << "x: " << std::fixed << std::setprecision(6) << this->location[0] << std::endl;
+    std::cout << "y: " << std::fixed << std::setprecision(6) << this->location[1] << std::endl;
 }
-size_t Solider::WriteCallback(void* contents, size_t size, size_t nmemb, std::string* data) {
+catch (json::parse_error& e) {
+    std::cerr << "JSON parsing error: " << e.what() << std::endl;
+}
+    //HANDLE pipe;
+    //DWORD bytesWritten, bytesRead;
+    //char buffer[4096];
+
+    //// Open the named pipe for writing
+    //pipe = CreateFile(TEXT("\\\\.\\pipe\\LocationPipe"), GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+
+    //if (pipe == INVALID_HANDLE_VALUE) {
+    //    std::cerr << "Failed to open named pipe for writing" << std::endl;
+    //    return ;
+    //}
+
+    //// Send a request to the parent process to update the position
+    //std::string request = "update_position";
+    //WriteFile(pipe, request.c_str(), request.size() + 1, &bytesWritten, NULL);
+
+    //// Close the pipe for writing
+    //CloseHandle(pipe);
+
+    //// Open the named pipe for reading
+    //pipe = CreateFile(TEXT("\\\\.\\pipe\\LocationPipe"), GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
+
+    //if (pipe == INVALID_HANDLE_VALUE) {
+    //    std::cerr << "Failed to open named pipe for reading" << std::endl;
+    //    return ;
+    //}
+
+    //// Read the updated position from the parent process
+    //ReadFile(pipe, buffer, sizeof(buffer), &bytesRead, NULL);
+    //std::cout << "Received updated position: " << buffer << std::endl;
+
+    //// Close the pipe for reading
+    //CloseHandle(pipe);
+
+}
+ size_t Solider::WriteCallback(void* contents, size_t size, size_t nmemb, std::string* data) {
     data->append((char*)contents, size * nmemb);
     return size * nmemb;
 }
+
 void Solider::Thread_location()
 {
-	while (true)
-	{
-		std::this_thread::sleep_for(std::chrono::seconds(10));
-		cout << "i wake uppppppppppppp!!!" << endl;
-       Solider::Update();
-	}
+    while (true)
+    {
+        std::cout << "location thread is going to sleep for 10 seconds..." << std::endl;
+
+        // Sleep for 10 seconds
+        std::this_thread::sleep_for(std::chrono::seconds(10));
+
+        // Display a message after sleeping
+        std::cout << "location thread woke up after 10 seconds." << std::endl;
+        Update();
+    }
 }
+

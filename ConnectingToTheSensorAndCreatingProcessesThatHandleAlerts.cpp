@@ -23,7 +23,7 @@ const double g = 9.81;// acceleration due to gravity (m/s^2)
 const double velocity = 975;
 size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* data);
 void ExtractLongitudeAndLatitude(const std::string& jsonResponse, double& longitude, double& latitude);
-std::string GetLocationData(const std::string& apiKey);
+string GetLocationData(const std::string& apiKey);
 void display();
 void init();
 double solveIntersectionTime(std::vector<double> relativePos, std::vector<double> relativeVel);
@@ -35,69 +35,22 @@ static double solider1[3] = { 37.7749,-122.4194, 15 };
 int main(int argc, char** argv)
 {
 
-    //STARTUPINFO si;
-    //PROCESS_INFORMATION pi;
-
-    //ZeroMemory(&si, sizeof(si));
-    //si.cb = sizeof(si);
-    //ZeroMemory(&pi, sizeof(pi));
-
-    //// Create a new process
-    //if (!CreateProcess(NULL, "your_executable_name.exe", NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
-    //    std::cerr << "Failed to create process. Error code: " << GetLastError() << "\n";
-    //    return 1;
-    //}
-
-    //// Wait for the child process to finish
-    //WaitForSingleObject(pi.hProcess, INFINITE);
-
-    //// Close process and thread handles
-    //CloseHandle(pi.hProcess);
-
     Solider solider;
     std::thread solider_location([&solider] {
-        solider.Thread_location();
-            });
+    solider.Thread_location();
+    });
+
+    Sensor sensor;
+    std::thread sensorThread([&sensor, &solider]() {
+        sensor.Shot_Detection_And_warning(solider);
+        });
+
+    std::thread Receiving_data_from_the_sensor([&sensor, &solider]() {
+        Create_A_Thread_For_Each_Warning(solider, sensor);
+        });
     solider_location.join();
-    //std::string locationData = GetLocationData("AIzaSyDM-oP_Aq9ENDsGp-D7aebmvM-VeEkKjys");
-    //double longitude = 0.0;
-    //double latitude = 0.0;
-    //ExtractLongitudeAndLatitude(locationData, longitude, latitude);
-
-    //// Print the extracted longitude and latitude
-    //std::cout << "Latitude: " << std::fixed << std::setprecision(6)<< latitude << std::endl;
-    //std::cout << "longitude: " << std::fixed << std::setprecision(6) << longitude << std::endl;
-    ////// Extract latitude, longitude, and 'Z' value
-    ////double latitude = parsedData["lat"];
-    ////double longitude = parsedData["lon"];
-    ////std::cout << "Latitude: " << latitude << std::endl;
-    ////std::cout << "Longitude: " << longitude << std::endl;
-    //std::cout << "Location Data: " << locationData<< std::endl;
-    //glutInit(&argc, argv);
-    //glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
-    //glutCreateWindow("3D Red Dot");
-
-    //glEnable(GL_DEPTH_TEST);
-
-    //glutDisplayFunc(display);
-    //init();
-
-    //glutMainLoop();
-    //Sensor sensor;
-    //Solider solider(solider1);
-    //std::thread sensorThread([&sensor, &solider]() {
-    //    sensor.Shot_Detection_And_warning(solider);
-    //    });
-    //
-
-    //// Ensure the thread is joinable so it can run
-    ////if (warningThrea.joinable()) {
-    ////    warningThrea.join();
-    ////}
-    ///*sf::RenderWindow window(sf::VideoMode(800, 600), "Projectile Trajectory Visualization");*/
-    //std::thread Receiving_data_from_the_sensor(Create_A_Thread_For_Each_Warning);
-    //Receiving_data_from_the_sensor.join();
-    //sensorThread.join();
+    sensorThread.join();
+    Receiving_data_from_the_sensor.join();
         return 0;
     }
 
@@ -155,7 +108,28 @@ size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* dat
     return size * nmemb;
 }
 
-std::string GetLocationData(const std::string& apiKey) {
+string GetLocationData(const std::string& apiKey) {
+    //// Function to update the position
+    //std::cout << "Updating position..." << std::endl;
+    //// Add your position update logic here
+
+    //// Send the updated position to the child process
+    //HANDLE pipe;
+    //DWORD bytesWritten;
+
+    //// Open the named pipe for writing
+    //pipe = CreateFile(TEXT("\\\\.\\pipe\\LocationPipe"), GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+
+    //if (pipe == INVALID_HANDLE_VALUE) {
+    //    std::cerr << "Failed to open named pipe for writing" << std::endl;
+    //    return;
+    //}
+
+    // Send the updated position to the child process
+ 
+  
+    // Close the named pipe in the parent process
+   
     std::string apiUrl = "https://www.googleapis.com/geolocation/v1/geolocate?key=" + apiKey;
     std::string response;
 
@@ -173,14 +147,16 @@ std::string GetLocationData(const std::string& apiKey) {
         curl_easy_cleanup(curl);
 
         if (res != CURLE_OK) {
-            return "Error: Failed to perform cURL request";
+            std::cout<< "Error: Failed to perform cURL request"<<endl;
         }
     }
     else {
-        return "Error: Failed to initialize cURL";
+        std::cout<< "Error: Failed to initialize cURL"<<endl;
     }
-
     return response;
+ /*   WriteFile(pipe, response.c_str(), response.size() + 1, &bytesWritten, NULL);
+
+    CloseHandle(pipe);*/
 }
 //void ExtractLongitudeAndLatitude(const std::string& jsonResponse, double&longitude, double& latitude) {
 //    try {
@@ -401,9 +377,8 @@ void Receiving_An_Alert_And_Calculating_Additional_Data(string Warning)
     Intercept_Location_Calculation(locationX, locationY, locationZ, angleX, angleY);
 
 }
-void Create_A_Thread_For_Each_Warning()
+void Create_A_Thread_For_Each_Warning(Solider & solider,Sensor & sensor)
 {
-    Sensor sensor;
     string line = "";
     //string WarningName;
     while (true)
@@ -412,7 +387,7 @@ void Create_A_Thread_For_Each_Warning()
         {
             // WarningName = "Warning" +to_string(mone);
             thread WarningName(Receiving_An_Alert_And_Calculating_Additional_Data, line);
-            WarningName.join();
+            WarningName.joinable();
             //mone++;
         }
     }
