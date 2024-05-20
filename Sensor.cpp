@@ -14,39 +14,38 @@ Sensor::Sensor()
 }
  void Sensor::Shot_Detection_And_warning(Solider& solider)
 {
-	while (true) 
-	{
-		random_device rd;
-		mt19937 gen(rd());
-		uniform_int_distribution<int> dis3(1, 60);
-		int When = dis3(gen);
-		cout << When << endl;
-		std::this_thread::sleep_for(std::chrono::seconds(When));
-		cout << "i woke uppppppppppppp!!!" << endl;
-		/*std::chrono::steady_clock::time_point current_time = std::chrono::steady_clock::now();
-		std::chrono::seconds duration(When);
-		std::chrono::steady_clock::time_point newTime = current_time + duration;
-		auto elapsed_time = std::chrono::duration_cast<std::chrono::seconds>(newTime-current_time).count();
-		while (elapsed_time > 0)
-		{
-			std::chrono::steady_clock::time_point current_time = std::chrono::steady_clock::now();
-			elapsed_time = std::chrono::duration_cast<std::chrono::seconds>(newTime - current_time).count();
-		}*/
-		double max_range_detectionX = solider.Get()[0] + (100 / 111000);
-		double min_range_detectionX = solider.Get()[0] - (100 / 111000);
-		double max_range_detectionY = solider.Get()[1] + (100 / 111000);
-		double min_range_detectionY = solider.Get()[1] - (100 / 111000);
-		uniform_real_distribution<double> dis(min_range_detectionX, max_range_detectionX);
-		double LocationX = dis(gen);
-		uniform_real_distribution<double> dis1(min_range_detectionY, max_range_detectionY);
-		double LocationY = dis1(gen);
+	 random_device rd;
+	 mt19937 gen(rd());
+	 int When;
+
+	 
+
+	 while (true)
+	 {
+		 uniform_int_distribution<int> dis3(1, 60);
+		 When = dis3(gen);
+		 cout << When << endl;
+		 std::this_thread::sleep_for(std::chrono::seconds(When));
+		 cout << "i woke uppppppppppppp!!!" << endl;
+
+		 // Get the updated soldier position in each iteration
+		 double max_range_detectionX = solider.Get()[0] + (100 / 111000);
+		 double min_range_detectionX = solider.Get()[0] - (100 / 111000);
+		 double max_range_detectionY = solider.Get()[1] + (100 / 111000);
+		 double min_range_detectionY = solider.Get()[1] - (100 / 111000);
+
+		 uniform_real_distribution<double> disX(min_range_detectionX, max_range_detectionX);
+		 uniform_real_distribution<double> disY(min_range_detectionY, max_range_detectionY);
+
+		 double LocationX = disX(gen);
+		 double LocationY = disY(gen);
 
 		double DirectionOfTheShotFromTheSoldier = bearing_with_altitude(solider.Get()[0], solider.Get()[1], LocationX, LocationY);
 
 		double distance = haversine_distance(solider.Get()[0], solider.Get()[1],LocationX,LocationY);
-		
-		ofstream outputFile("../Src/data.txt", ios::app);
 		mtx.lock();
+		ofstream outputFile("./Src/data.txt", ios::app);
+
 		if (outputFile.is_open())
 		{
 			outputFile << LocationX << "," << LocationY << "," << DirectionOfTheShotFromTheSoldier << "," << distance << "," << endl;
@@ -66,9 +65,10 @@ Sensor::Sensor()
 string Sensor::Receiving_And_Warning_From_The_Sensor()
 {
 	string alert = "";
-	ifstream file("../Src/data.txt");
 	mtx.lock();
-	file.is_open();
+	ifstream file("./Src/data.txt");
+
+	//file.is_open();
 	if (file.peek() == EOF) {
 		mtx.unlock();
 		/*std::cout << "There are no alerts available from the sensor" << endl;*/
@@ -99,7 +99,7 @@ string Sensor::Receiving_And_Warning_From_The_Sensor()
 	lines.erase(lines.begin());
 
 	// Write the updated content back to the file
-	std::ofstream outputFile("../Src/data.txt");
+	std::ofstream outputFile("./Src/data.txt");
 	for (const string& updatedLine : lines) {
 		outputFile << updatedLine << std::endl;
 	}

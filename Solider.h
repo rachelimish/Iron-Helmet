@@ -11,13 +11,14 @@
 #include <curl/curl.h>
 #include <Windows.h>
 #include <winhttp.h>
+#include <fstream>
 //#pragma comment(lib, "wininet.lib")
 using json = nlohmann::json;
 using namespace std;
 class Solider
 {
 	double* location = new double[2];//Position of the sensor on the soldier
-    const std::string apiKey = "AIzaSyDM-oP_Aq9ENDsGp-D7aebmvM-VeEkKjys";
+    string apiKey = "";
 public:
     // Static member variable to store the response data
     Solider();

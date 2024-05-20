@@ -1,6 +1,21 @@
 #include "Solider.h"
 Solider::Solider()
 {
+    string API_key = "";
+    ifstream file("./Src/API_key.txt");
+    if (file.peek() == EOF) {
+        std::cout << "There are no API key available " << endl;
+        return ;
+    }
+    if (getline(file, API_key)) { // Read one line from the file
+        std::cout << "API_key: " << API_key << endl;
+        this->apiKey = API_key;
+    }
+    else {
+        std::cout << "Failed to read API_key from the file." << endl;
+        return ;
+    }
+    file.close();
 }
 
 Solider::Solider(double* location)
@@ -50,40 +65,7 @@ Solider::Solider(double* location)
 catch (json::parse_error& e) {
     std::cerr << "JSON parsing error: " << e.what() << std::endl;
 }
-    //HANDLE pipe;
-    //DWORD bytesWritten, bytesRead;
-    //char buffer[4096];
-
-    //// Open the named pipe for writing
-    //pipe = CreateFile(TEXT("\\\\.\\pipe\\LocationPipe"), GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
-
-    //if (pipe == INVALID_HANDLE_VALUE) {
-    //    std::cerr << "Failed to open named pipe for writing" << std::endl;
-    //    return ;
-    //}
-
-    //// Send a request to the parent process to update the position
-    //std::string request = "update_position";
-    //WriteFile(pipe, request.c_str(), request.size() + 1, &bytesWritten, NULL);
-
-    //// Close the pipe for writing
-    //CloseHandle(pipe);
-
-    //// Open the named pipe for reading
-    //pipe = CreateFile(TEXT("\\\\.\\pipe\\LocationPipe"), GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
-
-    //if (pipe == INVALID_HANDLE_VALUE) {
-    //    std::cerr << "Failed to open named pipe for reading" << std::endl;
-    //    return ;
-    //}
-
-    //// Read the updated position from the parent process
-    //ReadFile(pipe, buffer, sizeof(buffer), &bytesRead, NULL);
-    //std::cout << "Received updated position: " << buffer << std::endl;
-
-    //// Close the pipe for reading
-    //CloseHandle(pipe);
-
+ 
 }
  size_t Solider::WriteCallback(void* contents, size_t size, size_t nmemb, std::string* data) {
     data->append((char*)contents, size * nmemb);
@@ -94,6 +76,7 @@ void Solider::Thread_location()
 {
     while (true)
     {
+        Update();
         std::cout << "location thread is going to sleep for 10 seconds..." << std::endl;
 
         // Sleep for 10 seconds
@@ -101,7 +84,7 @@ void Solider::Thread_location()
 
         // Display a message after sleeping
         std::cout << "location thread woke up after 10 seconds." << std::endl;
-        Update();
+       
     }
 }
 
