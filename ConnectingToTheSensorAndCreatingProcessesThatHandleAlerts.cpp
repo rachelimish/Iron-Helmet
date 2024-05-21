@@ -17,6 +17,8 @@
 #include <wininet.h>
 #include <curl/curl.h>
 #include <functional>
+#include <limits>
+#include <memory>
 struct Point2D {
     double x,y;
 };
@@ -29,7 +31,7 @@ void init();
 void drawGreenDot(); 
 void drawRedDots();
 double solveIntersectionTime(std::vector<double> relativePos, std::vector<double> relativeVel);
-static void Receiving_An_Alert_And_Calculating_Additional_Data(string alert, Solider& solider);
+static void Receiving_An_Alert_And_Calculating_Additional_Data(string &alert, Solider& solider);
 void Calculate_A_Projectile_Trajectory_In_2D(double x0, double y0, double angleX, double angleY, double timeStep, double totalTime);
 void Intercept_Location_Calculation(double locationX, double locationY, double angleX, double angleY, Solider& solider);
 void Create_A_Thread_For_Each_Warning(Solider& solider, Sensor& sensor);
@@ -86,7 +88,6 @@ int main(int argc, char** argv)
 
     glutMainLoop();
 
-
     solider_location.join();
     sensorThread.join();
     Receiving_data_from_the_sensor.join();
@@ -107,25 +108,6 @@ void display() {
     drawRedDots();
 
     glutSwapBuffers();
-
-
-    //glMatrixMode(GL_PROJECTION);
-    //glLoadIdentity();
-    //gluPerspective(45.0, 1.0, 1.0, 100.0); // Adjusted perspective settings
-    //glMatrixMode(GL_MODELVIEW);
-    //glLoadIdentity();
-    //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-
-
-    //glColor3f(1.0, 0.0, 0.0); // Red color
-    //glPointSize(10.0);
-
-    //glBegin(GL_POINTS);
-    //glVertex3f(0, 0, 0);// Fixed position for the red dot
-    //glEnd();
-
-    //glutSwapBuffers();
 }
 
 void drawGreenDot() {
@@ -158,7 +140,7 @@ double X_Map(double pointX, Solider& solider)
     double X;
     X = pointX - (solider.Get()[0]);
     X = X * 111000;//Convert the distance to meters
-    X = X / 50;
+    X = X /1000;
     return X;
 
 }
@@ -167,7 +149,7 @@ double Y_Map(double pointY, Solider& solider)
     double Y;
     Y = pointY - (solider.Get()[1]);
     Y = Y * 111000;//Convert the distance to meters
-    Y = Y / 50;
+    Y = Y / 1000;
     return Y;
 }
 //double Z_Hash(double pointZ, Solider& solider)
@@ -399,7 +381,7 @@ double solveIntersectionTime(std::vector<double> relativePos, std::vector<double
     return time;
 }
 
-void Receiving_An_Alert_And_Calculating_Additional_Data(string Warning, Solider& solider)
+void Receiving_An_Alert_And_Calculating_Additional_Data(string &Warning, Solider& solider)
 {
     char delimiter = ',';
     vector<double> outputStrings = {};
@@ -410,6 +392,10 @@ void Receiving_An_Alert_And_Calculating_Additional_Data(string Warning, Solider&
         outputStrings.push_back(stod(token));
         Warning.erase(0, pos + 1);
         cout << Warning<<endl;
+    }
+    if (Warning == "") {
+        cout << "Warning is null" << endl;
+        return;
     }
     double locationX = outputStrings[0];
     double locationY = outputStrings[1];
@@ -461,21 +447,24 @@ void Receiving_An_Alert_And_Calculating_Additional_Data(string Warning, Solider&
 
     if ((solider.Get()[0] - locationX) * cos(angleY) != (solider.Get()[1] - locationY) * sin(angleY)) {
         // Soldier is not on the firing line in 2D, return default interception point
+        cout << "The shot is no to the solider" << endl;
         return; }
-        thread firing_range(Calculate_A_Projectile_Trajectory_In_2D, locationX, locationY, angleX, angleY, 0.001, totalTime);
-        firing_range.detach();
-        Intercept_Location_Calculation(locationX, locationY, angleX, angleY,solider);
+        //thread firing_range(Calculate_A_Projectile_Trajectory_In_2D, locationX, locationY, angleX, angleY, 0.001, totalTime);
+        //firing_range.detach();
+        //Intercept_Location_Calculation(locationX, locationY, angleX, angleY,solider);
    
 }
 void Create_A_Thread_For_Each_Warning(Solider & solider,Sensor & sensor)
 {
-    string line ="";
+    string line="";
+    std::shared_ptr<std::string> warning;
     while (true)
     {
-        while ((line = sensor.Receiving_And_Warning_From_The_Sensor()) != "")
-        {
-            thread WarningName([&]() {
-                Receiving_An_Alert_And_Calculating_Additional_Data(line, solider);
+        line = sensor.Receiving_And_Warning_From_The_Sensor();
+        if (line != "") {
+           warning = std::make_shared<std::string>(line);
+            thread WarningName([warning, &solider]() {
+                Receiving_An_Alert_And_Calculating_Additional_Data(*warning, solider);
                 });
             WarningName.detach();
         }

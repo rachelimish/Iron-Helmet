@@ -17,7 +17,10 @@ Sensor::Sensor()
 	 random_device rd;
 	 mt19937 gen(rd());
 	 int When;
-
+	 double max_range_detectionX = 2;
+	 double min_range_detectionX = -2;
+	 double max_range_detectionY = 2;
+	 double min_range_detectionY = -2;
 	 
 
 	 while (true)
@@ -29,16 +32,16 @@ Sensor::Sensor()
 		 cout << "i woke uppppppppppppp!!!" << endl;
 
 		 // Get the updated soldier position in each iteration
-		 double max_range_detectionX = solider.Get()[0] + (100 / 111000);
+		/* double max_range_detectionX = solider.Get()[0] + (100 / 111000);
 		 double min_range_detectionX = solider.Get()[0] - (100 / 111000);
 		 double max_range_detectionY = solider.Get()[1] + (100 / 111000);
-		 double min_range_detectionY = solider.Get()[1] - (100 / 111000);
+		 double min_range_detectionY = solider.Get()[1] - (100 / 111000);*/
 
 		 uniform_real_distribution<double> disX(min_range_detectionX, max_range_detectionX);
 		 uniform_real_distribution<double> disY(min_range_detectionY, max_range_detectionY);
 
-		 double LocationX = disX(gen);
-		 double LocationY = disY(gen);
+		 double LocationX = (disX(gen)/111)+solider.Get()[0];
+		 double LocationY = (disY(gen)/111)+solider.Get()[1];
 
 		double DirectionOfTheShotFromTheSoldier = bearing_with_altitude(solider.Get()[0], solider.Get()[1], LocationX, LocationY);
 
@@ -48,7 +51,7 @@ Sensor::Sensor()
 
 		if (outputFile.is_open())
 		{
-			outputFile << LocationX << "," << LocationY << "," << DirectionOfTheShotFromTheSoldier << "," << distance << "," << endl;
+			outputFile << std::fixed << std::setprecision(15) << LocationX << "," << LocationY << "," << DirectionOfTheShotFromTheSoldier << "," << distance << "," << endl;
 
 			outputFile.close();
 			cout << "Data written to file successfully." << endl;
@@ -64,7 +67,8 @@ Sensor::Sensor()
 
 string Sensor::Receiving_And_Warning_From_The_Sensor()
 {
-	string alert = "";
+	string alert;
+	string warning;
 	mtx.lock();
 	ifstream file("./Src/data.txt");
 
@@ -75,7 +79,8 @@ string Sensor::Receiving_And_Warning_From_The_Sensor()
 		return "";
 	}
 	if (getline(file,alert)) { // Read one line from the file
-		std::cout << "Read line: " << alert << endl;
+		std::cout << "Read line: " << std::fixed << std::setprecision(10) << alert << endl;
+		warning = alert;
 	}
 	else {
 		mtx.unlock();
@@ -95,7 +100,7 @@ string Sensor::Receiving_And_Warning_From_The_Sensor()
 	}
 	file.close();
 
-	// Remove the line from the vector
+	 //Remove the line from the vector
 	lines.erase(lines.begin());
 
 	// Write the updated content back to the file
@@ -107,7 +112,7 @@ string Sensor::Receiving_And_Warning_From_The_Sensor()
 
 	std::cout << "Line " << 1 << " deleted successfully from file." << std::endl;
 	mtx.unlock();
-	return alert;
+	return warning;
 }
 // Function to calculate the distance between two points in 2 dimensions using Haversine formula in meters
 double Sensor::haversine_distance(double lat1, double lon1, double lat2, double lon2)
