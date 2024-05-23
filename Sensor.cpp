@@ -8,19 +8,35 @@ using namespace std;
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
+
 std::mutex mtx;
+
 Sensor::Sensor()
 {
+		string range = "";
+		ifstream file("./Src/range.txt");
+		if (file.peek() == EOF) {
+			std::cout << "There are no range available " << endl;
+		}
+		if (getline(file, range)) { // Read one line from the file
+			std::cout << "range: " << range << endl;
+			this->range = range;
+		}
+		else {
+			std::cout << "Failed to read range from the file." << endl;
+		}
+		file.close();
 }
- void Sensor::Shot_Detection_And_warning(Solider& solider)
+
+void Sensor::Shot_Detection_And_warning(Solider& solider)
 {
 	 random_device rd;
 	 mt19937 gen(rd());
 	 int When;
-	 double max_range_detectionX = 2;
-	 double min_range_detectionX = -2;
-	 double max_range_detectionY = 2;
-	 double min_range_detectionY = -2;
+	 double max_range_detectionX = std::stod(this->range);
+	 double min_range_detectionX = std::stod(this->range)*-1;
+	 double max_range_detectionY = std::stod(this->range);
+	 double min_range_detectionY = std::stod(this->range) * -1;
 	 
 
 	 while (true)
@@ -40,8 +56,8 @@ Sensor::Sensor()
 		 uniform_real_distribution<double> disX(min_range_detectionX, max_range_detectionX);
 		 uniform_real_distribution<double> disY(min_range_detectionY, max_range_detectionY);
 
-		 double LocationX = (disX(gen)/111)+solider.Get()[0];
-		 double LocationY = (disY(gen)/111)+solider.Get()[1];
+		 double LocationX = (disX(gen)/111000)+solider.Get()[0];
+		 double LocationY = (disY(gen)/111000)+solider.Get()[1];
 
 		double DirectionOfTheShotFromTheSoldier = bearing_with_altitude(solider.Get()[0], solider.Get()[1], LocationX, LocationY);
 

@@ -4,6 +4,7 @@
 using namespace std;
 class Sensor
 {
+    string range="";
 public:
     Sensor();
     void Shot_Detection_And_warning(Solider & solider);//A function that generates every time we will generate data for the sensor and write to a file (the function generates a location within 3 meters of the soldier, direction and distance).
