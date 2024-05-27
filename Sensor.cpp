@@ -41,7 +41,7 @@ void Sensor::Shot_Detection_And_warning(Solider& solider)
 
 	 while (true)
 	 {
-		 uniform_int_distribution<int> dis3(1, 60);
+		 uniform_int_distribution<int> dis3(1,20);
 		 When = dis3(gen);
 		 cout << When << endl;
 		 std::this_thread::sleep_for(std::chrono::seconds(When));
