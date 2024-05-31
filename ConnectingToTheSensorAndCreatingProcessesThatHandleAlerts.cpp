@@ -41,14 +41,19 @@ void drawYellowDots();
 void Remove_Value(std::vector<GLfloat> newRedDot);
 void Add_Value(std::vector<GLfloat> newRedDot);
 static double bearing_with_altitude(double lat1, double lon1, double lat2, double lon2);
+bool if_in_the_firing_line(Solider& solider, double locationX, double locationY, double LocationX2, double LocationY2);
 static double haversine_distance(double lat1, double lon1, double lat2, double lon2);
 double solveIntersectionTime(std::vector<double> relativePos, std::vector<double> relativeVel);
 static void Receiving_An_Alert_And_Calculating_Additional_Data(string alert, Solider& solider);
+std::vector<GLfloat> calculateInterceptionPoint(Solider& solider, double locationX, double locationY, double projectile_vx, double projectile_vy);
 void Firing_trajectory_calculation(bool display, Solider& solider, double locationX1, double locationY1, double angleX1, double angleY1, double timeStep, double totalTime1);
 std::vector<std::vector<GLfloat>>  Calculate_A_Projectile_Trajectory_In_2D(Solider& solider, double x0, double y0, double initVelocityX, double initVelocityY, double timeStep, double totalTime);
 void Deleting_a_firing_line(Solider& solider, double x0, double y0, double angleX, double angleY, double timeStep, double totalTime);
-std::vector<GLfloat> Intercept_Location_Calculation(double locationX, double locationY, double angleX, double angleY, Solider& solider);
+//std::vector<GLfloat> Intercept_Location_Calculation(double locationX, double locationY, double angleX, double angleY, Solider& solider);
 void Create_A_Thread_For_Each_Warning(Solider& solider, Sensor& sensor);
+std::vector<double> calculate_Bullet_Position(double x0, double y0, double initVelocityX, double initVelocityY, double time);
+std::vector<GLfloat> Intercept_point_calculation(Solider& soldier, double laserDistance, double Direction);
+std::vector<GLfloat> farthestPoint(Solider& soldier, double shootingAngle,double distance2,double timeOfFlight, double totalVelocity);
 //static double solider1[3] = { 37.7749,-122.4194, 15 };
 static double velocity;
 double X_Map(double pointX, Solider& solider);
@@ -62,6 +67,8 @@ static string warning;
 std::mutex mtx_GL2;
 constexpr double M16A1_MASS = 4.0; // in grams
 constexpr double M16A1_DRAG_COEFFICIENT = 0.25; // drag coefficient
+
+static std::vector<GLfloat> yellowPoint = {(0.0,0.0,0.0)};
 int main(int argc, char** argv)
 {
     //sf::RenderWindow window(sf::VideoMode(800, 600), "SFML Window");
@@ -195,13 +202,18 @@ void drawYellowDots() {
     glColor3f(1.0, 1.0, 0.0); // Yellow color (R, G, B values)
     glPointSize(5.0);
     
-    for (const auto& position : yellowDotPositions) {
+    if (yellowPoint[0] != 0) {
+        glBegin(GL_POINTS);
+        glVertex3f(yellowPoint[0], yellowPoint[1], yellowPoint[2]);
+        glEnd();
+    }
+   /* for (const auto& position : yellowDotPositions) {
         mtx_GL2.lock();
         glBegin(GL_POINTS);
         glVertex3f(position[0], position[1], position[2]);
         glEnd();
         mtx_GL2.unlock();
-    }
+    }*/
 
 }
 void init() {
@@ -271,102 +283,25 @@ string GetLocationData(const std::string& apiKey) {
 std::vector<std::vector<GLfloat>>  Calculate_A_Projectile_Trajectory_In_2D(Solider& solider, double x0, double y0, double initVelocityX, double initVelocityY, double timeStep, double totalTime)
 {
     std::vector<std::vector<GLfloat>> trajectory;
-   /* double vx = (velocity * cos(angleY) * cos(angleX));
-    double vy = (velocity * sin(angleY));*/
     std::vector<GLfloat> newRedDot;
-    double t = timeStep;
-     for(int i=0;i<=6;i++){
-         // Calculate x and y positions at time t
-         double xPos = x0 + initVelocityX * t;
-         double yPos = y0 + initVelocityY * t - 0.5 * g * t * t;
 
-         // Store the position (x, y) in the trajectory points
-         newRedDot = { static_cast<float>(X_Map(xPos,solider)), static_cast<float>(Y_Map(yPos,solider)), 0 };
+    double t = 0.000001;
+    double tt = timeStep;
+    while (tt <= totalTime) {
+        // Calculate x and y positions at time t
+        double xPos = x0 + ((initVelocityX * t)/111000);
+        double yPos = y0 + ((initVelocityY * t)/111000);
+        x0 = xPos;
+        y0 = yPos;
+        // Store the position (x, y) in the trajectory points
+        newRedDot = { static_cast<float>(X_Map(xPos,solider)), static_cast<float>(Y_Map(yPos,solider)), 0 };
 
-         Add_Value(newRedDot);
-         trajectory.push_back(newRedDot);
-         // Increment time
-         t += timeStep;
-  
-    //double Vx = angleX * cos(angleY); // initial velocity in x-direction
-    //double Vy = angleX * sin(angleY); // initial velocity in y-direction
-
-    //for (double t = timeStep; t <= totalTime; t += timeStep) {
-    //    double currentX = x0 + Vx * t;
-    //    double currentY = y0 + Vy * t - 0.5 * g * t * t;
-
-    //for (double t = 0; t <= 6; t ++) {
-    //    double v = sqrt((vx * vx) + (vy * vy));
-    //    double drag = 0.5 * M16A1_DRAG_COEFFICIENT * v * v / M16A1_MASS;
-    //    double ax = -((drag * vx) / v);
-    //    double ay = -(g + (drag * vy) / v);
-
-    //    vx += ax * timeStep;
-    //    vy += ay * timeStep;
-
-    //    double x = x0 + (vx * t);
-    //    double y = y0 + (vy * t) - 0.5 * g * t * t;
-    /*double vx = velocity * cos(angleY) * cos(angleX);
-    double vy = velocity * sin(angleY);
-    std::vector<GLfloat> newRedDot;
-    for (double t = timeStep; t <= totalTime; t += timeStep) {
-        double v = sqrt(vx * vx + vy * vy);
-        double drag = 0.5 * M16A1_DRAG_COEFFICIENT * v * v / M16A1_MASS;
-        double ax = -((drag * vx) / v);
-        double ay = -(g + (drag * vy) / v);
-
-        vx += ax * timeStep;
-        vy += ay * timeStep;
-
-        double x = x0 + vx * t;
-        double y = y0 + vy * t - 0.5 * g * t * t;*/
-    /*std::vector<std::vector<GLfloat>> trajectory;
-    double vx = velocity * cos(angleY) * cos(angleX);
-    double vy = velocity * sin(angleY);
-    std::vector<GLfloat> newRedDot;
-    double ax = 0.0;
-    double ay = 0.0;
-    for (double t = 0; t <= totalTime; t += timeStep) {
-        double v = sqrt(vx * vx + vy * vy);
-        double drag = 0.5 * M16A1_DRAG_COEFFICIENT * v * v / M16A1_MASS;
-        double ax = -((drag * vx) / v);
-        double ay = -(g + (drag * vy) / v);
-
-        vx += ax * timeStep;
-        vy += ay * timeStep;
-
-        double x = x0 + vx * t;
-        double y = y0 + vy * t - 0.5 * g * t * t;*/
-
-        // Use the corrected x and y values for further calculations or visualization
-
-
+        Add_Value(newRedDot);
+        // Increment time
+        t += 0.000001;
+        tt += timeStep;
     }
     return trajectory;
-    //std::vector<std::vector<GLfloat>> Route;
-    //double vx = velocity * cos(angleY) * cos(angleX);
-    //double vy = velocity * sin(angleY);
-
-    //double ax, ay;
-
-    //for (double t = timeStep; t <= totalTime; t += timeStep) {
-    //    double v = sqrt(vx * vx + vy * vy);
-    //    double drag = 0.5 * M16A1_DRAG_COEFFICIENT * v * v / M16A1_MASS;
-    //    ax = -drag * vx / v;
-    //    ay = -g - drag * vy / v;
-
-    //    vx = vx + ax * timeStep;
-    //    vy = vy + ay * timeStep;
-
-    //    double x = x0 + vx * t;
-    //    double y = y0 + vy * t - 0.5 * g * t * t;
-    //    std::vector<GLfloat> newRedDot = { static_cast<float>(X_Map(x,solider)), static_cast<float>(Y_Map(y,solider)), 0 };
-    //    mtx_GL.lock();
-    //    redDotPositions.push_back(newRedDot);
-    //    mtx_GL.unlock();
-    //    Route.push_back(newRedDot);
-    //}
-    //return Route;
 }
 void Add_Value(std::vector<GLfloat> newRedDot)
 {
@@ -415,12 +350,12 @@ std::vector<GLfloat> Intercept_Location_Calculation(double locationX, double loc
     double angleY_proj = atan2(projectile_vy, projectile_vx);
     double angleX_proj = 0; // No Z dimension, set to 0
 
-    double angleY_deg = angleY_proj * 180.0 / M_PI;
-    double angleX_deg = angleX_proj * 180.0 / M_PI;
+    /*double angleY_deg = angleY_proj * 180.0 / M_PI;
+    double angleX_deg = angleX_proj * 180.0 / M_PI;*/
 
     double speed_of_light = 3e8; // Speed of light in m/s
-    double Laser_beam_vx = speed_of_light * cos(angleY_deg * M_PI / 180) * cos(angleX_deg * M_PI / 180);
-    double Laser_beam_vy = speed_of_light * sin(angleY_deg * M_PI / 180);
+    double Laser_beam_vx = speed_of_light * cos(angleY_proj * M_PI / 180) * cos(angleX_proj * M_PI / 180);
+    double Laser_beam_vy = speed_of_light * sin(angleY_proj * M_PI / 180);
 
     // The relative speed
     double relative_speed[2] = { projectile_vx - Laser_beam_vx, projectile_vy - Laser_beam_vy };
@@ -434,7 +369,7 @@ std::vector<GLfloat> Intercept_Location_Calculation(double locationX, double loc
     std::vector<double> speed;
     speed.assign(relative_speed, relative_speed + 2);
 
-    if ((interceptionTime = solveIntersectionTime(location, speed)) == -0.1)
+    if ((interceptionTime = solveIntersectionTime(location, speed)) == -1.0)
         return newYellowDot;
 
     Point2D interceptPoint;
@@ -450,9 +385,9 @@ std::vector<GLfloat> Intercept_Location_Calculation(double locationX, double loc
     adjustedInterceptionPoint.y = interceptPoint.y - projectile_vy * laserBeamTime;
 
     newYellowDot = { static_cast<float>(X_Map(adjustedInterceptionPoint.x,solider)), static_cast<float>(Y_Map(adjustedInterceptionPoint.y,solider)), 0 };
-    mtx_GL2.lock();
-    yellowDotPositions.push_back(newYellowDot);
-    mtx_GL2.unlock();
+    //mtx_GL2.lock();
+    //yellowDotPositions.push_back(newYellowDot);
+    //mtx_GL2.unlock();
     std::cout<< adjustedInterceptionPoint.x<<","<< adjustedInterceptionPoint.y << endl;
     return newYellowDot;
 }
@@ -511,7 +446,7 @@ double solveIntersectionTime(std::vector<double> relativePos, std::vector<double
     double time = -1.0; // Initialize time to a negative value
 
     // Check for division by zero and solve for time
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < 2; ++i) {
         if (relativeVel[i] != 0.0) {
             double t = relativePos[i] / relativeVel[i];
             if (time == -1.0 || t == time) {
@@ -548,12 +483,8 @@ void Receiving_An_Alert_And_Calculating_Additional_Data(string Warning, Solider&
     double locationY = outputStrings[1];
     std::vector<GLfloat> newRedDot = { static_cast<float>(X_Map(locationX,solider)), static_cast<float>(Y_Map(locationY,solider)), 0};
     Add_Value(newRedDot);
-    /*mtx_GL.lock();
-    redDotPositions.push_back(newRedDot);
-    mtx_GL.unlock();*/
     double Direction = outputStrings[2];
     double distance = outputStrings[3];
-
     string radius = "";
     ifstream file("./Src/radius.txt");
     if (file.peek() == EOF) {
@@ -585,11 +516,11 @@ void Receiving_An_Alert_And_Calculating_Additional_Data(string Warning, Solider&
     /* mtx_GL.lock();
     redDotPositions.push_back(newRedDot2);
     mtx_GL.unlock();*/
-    double dist12 = sqrt((locationX - solider.Get()[0]) * (locationX - solider.Get()[0]) + (locationY - solider.Get()[1]) * (locationY - solider.Get()[1]));
+  /*  double dist12 = sqrt((locationX - solider.Get()[0]) * (locationX - solider.Get()[0]) + (locationY - solider.Get()[1]) * (locationY - solider.Get()[1]));
     double dist13 = sqrt((LocationX2 - solider.Get()[0]) * (LocationX2 - solider.Get()[0]) + (LocationY2 - solider.Get()[1]) * (LocationY2 - solider.Get()[1]));
     double dist23 = sqrt((LocationX2 - locationX) * (LocationX2 - locationX) + (LocationY2 - locationY) * (LocationY2 - locationY));
-    //if in the firing line
-    bool if_in_the_firing_line = abs(dist12 - (dist13 + dist23)) < 0.000001;
+   */ //if in the firing line
+   /* bool if_in_the_firing_line = abs(dist12 - (dist13 + dist23)) < 0.000001;*/
    
     //double totalVelocity = sqrt(initVelocityX * initVelocityX + initVelocityY * initVelocityY);
 
@@ -629,10 +560,8 @@ void Receiving_An_Alert_And_Calculating_Additional_Data(string Warning, Solider&
     //double angleY = std::asin(std::sin(launchAngleDeg * M_PI / 180.0) / std::sqrt(std::cos(launchAngleDeg * M_PI / 180.0) *
     //    std::cos(launchAngleDeg * M_PI / 180.0) + std::sin(launchAngleDeg * M_PI / 180.0) * std::sin(launchAngleDeg * M_PI / 180.0)));
     /*double totalTime = distance2 / velocity;*/
-    if (if_in_the_firing_line)
+    if (if_in_the_firing_line(solider, locationX, locationY, LocationX2, LocationY2))
     {
-
-
         double Direction2 = bearing_with_altitude(solider.Get()[0], solider.Get()[1], LocationX2, LocationY2);
         double distance2 = haversine_distance(solider.Get()[0], solider.Get()[1], LocationX2, LocationY2);
 
@@ -640,57 +569,179 @@ void Receiving_An_Alert_And_Calculating_Additional_Data(string Warning, Solider&
         while (shotDirection >= 360.0) {
             shotDirection -= 360.0;
         }
-        double directionRad = shotDirection * M_PI / 180.0; // Convert direction angle from degrees to radians
-
-        double initVelocityX = velocity * cos(directionRad); // Calculate initial velocity component in the x-direction
-        double initVelocityY = velocity * sin(directionRad); // Calculate initial velocity component in the y-direction
-
-        double totalVelocity = sqrt(initVelocityX * initVelocityX + initVelocityY * initVelocityY);
+        //double directionRad = shotDirection * M_PI / 180.0; // Convert direction angle from degrees to radians
+        //cout << "directionRad" << shotDirection;
+        //למה זה מינוס?
+        double initVelocityX = cos(shotDirection)* velocity; // Calculate initial velocity component in the x-direction
+        cout << "initVelocityX" << initVelocityX;
+        double initVelocityY = velocity * sin(shotDirection); // Calculate initial velocity component in the y-direction
+        cout << "initVelocityY" << initVelocityY;
+        double totalVelocity = sqrt((initVelocityX * initVelocityX) + (initVelocityY * initVelocityY));
 
         double timeOfFlight = distance2 / totalVelocity;
 
-        double horizontal_distance = sqrt(pow(LocationY2 - solider.Get()[1], 2) + pow(LocationX2 - solider.Get()[0], 2));
-        double firingAngle = atan((pow(totalVelocity, 2) - sqrt(pow(totalVelocity, 4) - 2 * g * (g * pow(horizontal_distance, 2)))) / (g * horizontal_distance));
+        //double horizontal_distance = sqrt(pow(LocationY2 - solider.Get()[1], 2) + pow(LocationX2 - solider.Get()[0], 2));
+        //double firingAngle = atan((pow(totalVelocity, 2) - sqrt(pow(totalVelocity, 4) - 2 * g * (g * pow(horizontal_distance, 2)))) / (g * horizontal_distance));
 
-        double launchAngleDeg = firingAngle * 180.0 / M_PI; // Convert launch angle from radians to degrees
-        double angleX = atan(initVelocityY / initVelocityX); // Calculate launch angle in the x-direction in radians
-        double angleY = atan((initVelocityY + sqrt(initVelocityY * initVelocityY + 2 * g * LocationY2)) / initVelocityX); // Calculate launch angle in the y-direction in radians
-     
-        double tt = 0.01;
-        double t = 0.000001;
-        while(tt<= timeOfFlight){
-            // Calculate x and y positions at time t
-            double xPos = LocationX2 + initVelocityX * t;
-            double yPos = LocationY2 + initVelocityY * t - 0.5 * g * t * t;
+        ///*double launchAngleDeg = firingAngle * 180.0 / M_PI; */// Convert launch angle from radians to degrees
+        //double angleX = atan(initVelocityY / initVelocityX); // Calculate launch angle in the x-direction in radians
+        //double angleY = atan((initVelocityY + sqrt(initVelocityY * initVelocityY + 2 * g * LocationY2)) / initVelocityX); // Calculate launch angle in the y-direction in radians
 
-            // Store the position (x, y) in the trajectory points
-            newRedDot = { static_cast<float>(X_Map(xPos,solider)), static_cast<float>(Y_Map(yPos,solider)), 0 };
 
-            Add_Value(newRedDot);
-            // Increment time
-            t += 0.000001;
-            tt += 0.01;
-        }
-         std::vector<std::vector<GLfloat>> trajectoryResults;
-        thread firing_range([&solider, LocationX2, LocationY2, initVelocityX, initVelocityY, timeOfFlight, &trajectoryResults]() {
-            trajectoryResults = Calculate_A_Projectile_Trajectory_In_2D(solider, LocationX2, LocationY2, initVelocityX, initVelocityY, 0.001, timeOfFlight);
-            });
-       /* std::vector<GLfloat> interception_point;
-        interception_point=Intercept_Location_Calculation(locationX, locationY, angleX, angleY, solider);*/
-        firing_range.join();
-        /*trajectoryResults.push_back(newRedDot);
-        for (const auto& trajectory : trajectoryResults) {
-            mtx_GL.lock();
-            redDotPositions.erase(std::remove(redDotPositions.begin(), redDotPositions.end(), trajectory), redDotPositions.end());
-            mtx_GL.unlock();
-        }
-        if (interception_point[0] != 0.0 && interception_point[1] != 0.0) 
-        {
-            mtx_GL2.lock();
-            yellowDotPositions.erase(std::remove(redDotPositions.begin(), redDotPositions.end(), interception_point), redDotPositions.end());
-            mtx_GL2.unlock();
-        }*/
+        //double tt = 0.1;
+        //double t = 0.000001;
+        //while(tt<= timeOfFlight){
+        // // Calculate x and y positions at time t
+        //double xPos = LocationX2 + (initVelocityX * t);
+        //double yPos = LocationY2 + (initVelocityY * t);
+        //LocationX2 = xPos;
+        //LocationY2 = yPos;
+        //// Store the position (x, y) in the trajectory points
+        //newRedDot = { static_cast<float>(X_Map(xPos,solider)), static_cast<float>(Y_Map(yPos,solider)), 0 };
+
+        //Add_Value(newRedDot);
+        //// Increment time
+        //t += 0.000001;
+        //tt += 0.1;
+        //}
+  
+  
+  
+        //double time_step = 0.01;
+        //double t = 0.000001;
+        //double xPos=0.0;
+        //double yPos=0.0;
+        //while(time_step <= timeOfFlight){
+        //    // Calculate x and y positions at time t
+        //     xPos = locationX+ t *(LocationX2-locationX);
+        //     yPos = locationY + t * (LocationY2 - locationY);
+        //     locationX = LocationX2;
+        //     locationY = LocationY2;
+        //     LocationX2 = xPos;
+        //     LocationY2 = yPos;
+        //    // Store the position (x, y) in the trajectory points
+        //    newRedDot = { static_cast<float>(X_Map(xPos,solider)), static_cast<float>(Y_Map(yPos,solider)), 0 };
+
+        //    Add_Value(newRedDot);
+        //    // Increment time
+        //    t += 0.000001;
+        //    time_step += 0.01;
+        //}
+
+
+        //double tt = 0.01;
+        //double t = 0.000001;
+        //while(tt<= timeOfFlight){
+        //    // Calculate x and y positions at time t
+        //    double xPos = LocationX2 + initVelocityX * t;
+        //    double yPos = LocationY2 + initVelocityY * t - 0.5 * g * t * t;
+
+        //    // Store the position (x, y) in the trajectory points
+        //    newRedDot = { static_cast<float>(X_Map(xPos,solider)), static_cast<float>(Y_Map(yPos,solider)), 0 };
+
+        //    Add_Value(newRedDot);
+        //    // Increment time
+        //    t += 0.000001;
+        //    tt += 0.01;
+        //}
+          
+           string leaser = "";
+           ifstream file("./Src/leaser.txt");
+           if (file.peek() == EOF) {
+               std::cout << "There are no leaser available " << endl;
+               return ;
+           }
+           if (getline(file, leaser)) { // Read one line from the file
+               std::cout << "leaser: " << leaser << endl;
+           }
+           else {
+               std::cout << "Failed to read leaser from the file." << endl;
+               return ;
+           }
+           file.close();
+           double laserDistance = std::stod(leaser);
+           std::vector<std::vector<GLfloat>> trajectoryResults;
+           std::vector<GLfloat> interception_point = { 0.0,0.0,0.0 };
+           std::vector<GLfloat> newRedDot;
+           std::vector<double> bulletPosition = { 0.0,0.0 };
+           double bulletPosition_direction = 0.0;
+           double bulletPosition_distance = 0.0;
+           double timeStep = 0.01;
+           double t = 0.000001;
+           double location1 = LocationX2;
+           double location2 = LocationY2;
+           if (distance2 < laserDistance) {
+               laserDistance = distance2;
+               interception_point = Intercept_point_calculation(solider, laserDistance, Direction2);
+           }
+           else {
+               for (double time = timeStep; time <= timeOfFlight; time += timeStep) {
+                   bulletPosition = calculate_Bullet_Position(LocationX2, LocationY2, initVelocityX, initVelocityY, t);
+                   newRedDot = { static_cast<float>(X_Map(bulletPosition[0],solider)), static_cast<float>(Y_Map(bulletPosition[1],solider)), 0};
+                   Add_Value(newRedDot);
+                   trajectoryResults.push_back(newRedDot);
+                   if (if_in_the_firing_line(solider, LocationX2, LocationY2, bulletPosition[0], bulletPosition[1])) {
+                       bulletPosition_direction = bearing_with_altitude(solider.Get()[0], solider.Get()[1], bulletPosition[0], bulletPosition[1]);
+                       bulletPosition_distance = haversine_distance(solider.Get()[0], solider.Get()[1], bulletPosition[0], bulletPosition[1]);
+                       if (bulletPosition_distance < laserDistance)
+                       {
+                           laserDistance = bulletPosition_distance;
+                           interception_point = Intercept_point_calculation(solider, laserDistance, bulletPosition_direction);
+                             break;
+                       }
+                       LocationX2 = bulletPosition[0];
+                       LocationY2 = bulletPosition[1];
+                       t += 0.000001;
+                   }
+                   else
+                   {
+                       break;
+                   }
+
+               }
+           }
         
+
+
+
+
+
+
+
+
+
+
+
+
+
+     /*   thread firing_range([&solider, LocationX2, LocationY2, initVelocityX, initVelocityY, timeOfFlight, &trajectoryResults]() {
+            trajectoryResults = Calculate_A_Projectile_Trajectory_In_2D(solider, LocationX2, LocationY2, initVelocityX, initVelocityY, 0.01, timeOfFlight);
+            });
+        */
+        /*Direction2= Direction2 * M_PI / 180.0;*/
+       /* std::vector<GLfloat> interception_point;*/
+        //interception_point = calculateInterceptionPoint(solider, locationX, locationY, initVelocityX, initVelocityY);        std::vector<GLfloat> interception_point;
+      /*  interception_point=Intercept_Location_Calculation(locationX, locationY, angleX, angleY, solider);*/
+       /* interception_point = farthestPoint(solider, Direction2, distance2, timeOfFlight,totalVelocity);*/
+        /*firing_range.join();*/
+        while (yellowPoint[0] != 0) {}
+        yellowPoint = interception_point;
+        trajectoryResults.push_back(newRedDot);
+        trajectoryResults.push_back(newRedDot2);
+        std::this_thread::sleep_for(std::chrono::seconds(3));
+        for (const auto& trajectory : trajectoryResults) {
+            Remove_Value(trajectory);
+           /* redDotPositions.erase(std::remove(redDotPositions.begin(), redDotPositions.end(), trajectory), redDotPositions.end());
+            mtx_GL.unlock();*/
+        }
+        std::this_thread::sleep_for(std::chrono::seconds(3));
+        //if (interception_point[0] != 0.0 && interception_point[1] != 0.0) 
+        //{
+        //    mtx_GL2.lock();
+        //    yellowDotPositions.erase(std::remove(redDotPositions.begin(), redDotPositions.end(), interception_point), redDotPositions.end());
+        //    mtx_GL2.unlock();
+        //}
+        yellowPoint[0] = 0;
     }
     else 
     {
@@ -704,6 +755,137 @@ void Receiving_An_Alert_And_Calculating_Additional_Data(string Warning, Solider&
         mtx_GL.unlock();*/
     }
 }
+// פונקציה לחישוב הנקודה המרחקת ביותר מהחייל
+std::vector<GLfloat> farthestPoint(Solider &soldier, double shootingAngle,double distance2,double timeOfFlight,double totalVelocity) {
+
+    string leaser = "";
+    ifstream file("./Src/leaser.txt");
+    if (file.peek() == EOF) {
+        std::cout << "There are no leaser available " << endl;
+        return { 0.0, 0.0,0.0 };
+    }
+    if (getline(file, leaser)) { // Read one line from the file
+        std::cout << "leaser: " << leaser << endl;
+    }
+    else {
+        std::cout << "Failed to read leaser from the file." << endl;
+        return { 0.0, 0.0,0.0 };
+    }
+    file.close();
+
+    std::vector<GLfloat> newYellowDot = { 0.0, 0.0,0.0 };
+
+    double laserDistance = std::stod(leaser);
+    if (distance2 < laserDistance) {
+        laserDistance = distance2;
+        newYellowDot[0] = soldier.Get()[0] + ((laserDistance * cos(shootingAngle))/111000);
+        newYellowDot[1] = soldier.Get()[1] + ((laserDistance * sin(shootingAngle))/111000);
+        newYellowDot = { static_cast<float>(X_Map(newYellowDot[0],soldier)), static_cast<float>(Y_Map(newYellowDot[1],soldier)), 0 };
+        return newYellowDot;
+    }
+
+    // חישוב הנקודה המרחקת ביותר באמצעות משוואת פיתגורס
+    double when = (distance2 - laserDistance) / totalVelocity;
+    std::this_thread::sleep_for(std::chrono::duration<double>(when));
+    newYellowDot[0] = soldier.Get()[0] +(( laserDistance * cos(shootingAngle))/111000);
+    newYellowDot[1] = soldier.Get()[1] +(( laserDistance * sin(shootingAngle))/111000);
+    newYellowDot = { static_cast<float>(X_Map(newYellowDot[0],soldier)), static_cast<float>(Y_Map(newYellowDot[1],soldier)), 0 };
+    return newYellowDot;
+}
+bool if_in_the_firing_line(Solider& solider, double locationX, double locationY, double LocationX2, double LocationY2)
+{
+
+    double dist12 = sqrt((locationX - solider.Get()[0]) * (locationX - solider.Get()[0]) + (locationY - solider.Get()[1]) * (locationY - solider.Get()[1]));
+    double dist13 = sqrt((LocationX2 - solider.Get()[0]) * (LocationX2 - solider.Get()[0]) + (LocationY2 - solider.Get()[1]) * (LocationY2 - solider.Get()[1]));
+    double dist23 = sqrt((LocationX2 - locationX) * (LocationX2 - locationX) + (LocationY2 - locationY) * (LocationY2 - locationY));
+    //if in the firing line
+    return abs(dist12 - (dist13 + dist23)) < 0.000001;
+}
+
+std::vector<double> calculate_Bullet_Position(double x0, double y0, double initVelocityX, double initVelocityY, double time)
+{
+    vector<double> Position = { 0.0,0.0 };
+    Position[0] = x0 + ((initVelocityX * time)/* / 111000*/);
+    Position[1] = y0 + ((initVelocityY * time) /*/ 111000*/);
+    return Position;
+}
+
+std::vector<GLfloat> Intercept_point_calculation(Solider& soldier, double laserDistance, double Direction)
+{
+    std::vector<GLfloat> interception_point = { 0.0,0.0,0.0 };
+    interception_point[0] = soldier.Get()[0] + ((laserDistance * cos(Direction)) / 111000);
+    interception_point[1] = soldier.Get()[1] + ((laserDistance * sin(Direction)) / 111000);
+    interception_point = { static_cast<float>(X_Map(interception_point[0],soldier)), static_cast<float>(Y_Map(interception_point[1],soldier)), 0 };
+    return interception_point;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+std::vector<GLfloat> calculateInterceptionPoint(Solider &solider,double locationX, double locationY, double projectile_vx, double projectile_vy) {
+    std::vector<GLfloat> newYellowDot = { 0.0, 0.0,0.0 };
+
+    
+    // Calculate relative speed and location
+    double relative_speed[2] = { projectile_vx, projectile_vy };
+    double relative_location[2] = { locationX - solider.Get()[0], locationY - solider.Get()[1] };
+
+    // Solve for interception time
+    double interceptTime;
+    Point2D interceptPoint;
+    std::vector<double> location;
+    location.assign(relative_location, relative_location + 2);
+    std::vector <double> speed;
+    speed.assign(relative_speed, relative_speed + 2);
+
+    if ((interceptTime = solveIntersectionTime(location, speed)) == -1.0) {
+        // If no interception point found, return a default point
+        return { 0, 0 };
+    }
+
+    // Calculate interception point coordinates
+    interceptPoint.x = locationX + projectile_vx * interceptTime;
+    interceptPoint.y = locationY + projectile_vy * interceptTime;
+
+
+
+    newYellowDot = { static_cast<float>(X_Map(interceptPoint.x,solider)), static_cast<float>(Y_Map(interceptPoint.y,solider)), 0 };
+    mtx_GL2.lock();
+    yellowDotPositions.push_back(newYellowDot);
+    mtx_GL2.unlock();
+
+    return newYellowDot;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //void Firing_trajectory_calculation(bool display,Solider &solider, double locationX1, double locationY1, double angleX1, double angleY1, double timeStep, double totalTime1)
 //{
 //    std::map<bool, FunctionPointer> functionMap = {

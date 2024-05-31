@@ -45,7 +45,7 @@ void Sensor::Shot_Detection_And_warning(Solider& solider)
 		 When = dis3(gen);
 		 cout << When << endl;
 		 std::this_thread::sleep_for(std::chrono::seconds(When));
-		 cout << "i woke uppppppppppppp!!!" << endl;
+		 cout << "i woke upppppppppppp!!!" << endl;
 
 		 // Get the updated soldier position in each iteration
 		/* double max_range_detectionX = solider.Get()[0] + (100 / 111000);
