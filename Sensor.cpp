@@ -47,12 +47,6 @@ void Sensor::Shot_Detection_And_warning(Solider& solider)
 		 std::this_thread::sleep_for(std::chrono::seconds(When));
 		 cout << "i woke upppppppppppp!!!" << endl;
 
-		 // Get the updated soldier position in each iteration
-		/* double max_range_detectionX = solider.Get()[0] + (100 / 111000);
-		 double min_range_detectionX = solider.Get()[0] - (100 / 111000);
-		 double max_range_detectionY = solider.Get()[1] + (100 / 111000);
-		 double min_range_detectionY = solider.Get()[1] - (100 / 111000);*/
-
 		 uniform_real_distribution<double> disX(min_range_detectionX, max_range_detectionX);
 		 uniform_real_distribution<double> disY(min_range_detectionY, max_range_detectionY);
 

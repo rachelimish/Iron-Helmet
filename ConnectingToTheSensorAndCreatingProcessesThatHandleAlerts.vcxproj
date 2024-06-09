@@ -134,16 +134,12 @@
     <ClCompile Include="Solider.cpp">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\racheli\Desktop\פרויקטטט\curl-master;C:\Users\racheli\Desktop\פרויקטטט\freeglut-3.4.0;</AdditionalIncludeDirectories>
     </ClCompile>
-    <ClCompile Include="Warning.cpp" />
     <ClCompile Include="ConnectingToTheSensorAndCreatingProcessesThatHandleAlerts.cpp" />
     <ClCompile Include="Sensor.cpp" />
-    <ClCompile Include="WarningQueue.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Solider.h" />
-    <ClInclude Include="Warning.h" />
     <ClInclude Include="Sensor.h" />
-    <ClInclude Include="WarningQueue.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
