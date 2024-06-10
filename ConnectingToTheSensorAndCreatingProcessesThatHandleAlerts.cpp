@@ -149,13 +149,7 @@ void drawYellowDots() {
         glVertex3f(yellowPoint[0], yellowPoint[1], yellowPoint[2]);
         glEnd();
     }
-   /* for (const auto& position : yellowDotPositions) {
-        mtx_GL2.lock();
-        glBegin(GL_POINTS);
-        glVertex3f(position[0], position[1], position[2]);
-        glEnd();
-        mtx_GL2.unlock();
-    }*/
+
 
 }
 void init() {
