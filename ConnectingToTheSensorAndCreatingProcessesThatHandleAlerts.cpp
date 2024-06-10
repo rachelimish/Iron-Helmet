@@ -390,11 +390,11 @@ std::vector<GLfloat> farthestPoint(Solider &soldier, double shootingAngle,double
 
 bool if_in_the_firing_line(Solider& solider, double locationX, double locationY, double LocationX2, double LocationY2)
 {
-    //מרחק בין נקודת הירי הראשונה לחייל
+    //Distance between the first firing point and the soldier
     double dist12 = sqrt((locationX - solider.Get()[0]) * (locationX - solider.Get()[0]) + (locationY - solider.Get()[1]) * (locationY - solider.Get()[1]));
-    //מרחק בין נקודת הירי הראשונה לנקודת הירי השניה
+    //Distance between the first firing point and the second firing point
     double dist13 = sqrt((LocationX2 - solider.Get()[0]) * (LocationX2 - solider.Get()[0]) + (LocationY2 - solider.Get()[1]) * (LocationY2 - solider.Get()[1]));
-    //מרחק בין החייל לנקודת הירי השנייה
+    //Distance between the soldier and the second shooting point
     double dist23 = sqrt((LocationX2 - locationX) * (LocationX2 - locationX) + (LocationY2 - locationY) * (LocationY2 - locationY));
     //if in the firing line
     return abs(dist12 - (dist13 + dist23)) < 0.000001;
