@@ -1,19 +1,36 @@
-Final project - Iron Helmet
+🛡️ Final Project – Iron Helmet
+A real-time soldier protection system designed to detect incoming threats and simulate interception.
 
-Connection to GPS - the soldier's location.
+🔧 Key Features
+GPS Integration – Tracks the soldier’s real-time location.
 
-AMMS sensor image for shot detection.
+Shot Detection – Uses AMMS sensor input to identify projectile threats.
 
-Interception of the projectile using a laser beam.
+Interception Simulation – Intercepts an M16A1 projectile using a laser beam (up to 20 meters).
 
-The project view using the OPENGL simulation library.
+3D Visualization – Simulated environment built with the OpenGL library.
 
-Discounts:
+🧪 Technologies Used
+C++ / Arduino
 
--Shortened M16A1 rifle projectile interception.
+OpenGL (simulation)
 
--Use of a laser beam within a range of 20 meters.
+GPS Module
 
-To use the software:
+AMMS Sensor
 
-Attach the API key in the API_key file.
+Laser Range Module
+
+🚀 Getting Started
+Clone the repository.
+
+Insert your API key into the file named API_key.
+
+Run the project through the main executable.
+
+📝 Notes
+The system simulates short-distance projectile interception (up to 20m).
+
+“Iron Helmet” – Final Software Engineering project combining hardware (GPS, sensors), laser interception logic, and 3D simulation (OpenGL).
+
+
